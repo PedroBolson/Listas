@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Trash2, Edit, Check, Users, MoreVertical, Package } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Plus, Trash2, Edit, Check, Users, MoreVertical, Package, Search, Eraser, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
+import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { useAuth } from "../auth/useAuth";
 import { useList, useListItems } from "../../hooks/useLists";
-import { createListItem, toggleListItem, deleteListItem } from "../../services/listService";
+import { createListItem, toggleListItem, deleteListItem, deleteList } from "../../services/listService";
 import { getUserById } from "../../services/userService";
 
 export function ListDetailPage() {
@@ -21,6 +22,21 @@ export function ListDetailPage() {
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [adding, setAdding] = useState(false);
     const [userNames, setUserNames] = useState<Record<string, string>>({});
+    const [searchQuery, setSearchQuery] = useState("");
+    const [showSearch, setShowSearch] = useState(false);
+    const [confirmDialog, setConfirmDialog] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        variant?: "danger" | "warning";
+    }>({
+        isOpen: false,
+        title: "",
+        message: "",
+        onConfirm: () => { },
+    });
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const primaryFamilyId = domainUser?.props.primaryFamilyId ?? null;
     const { list, loading: listLoading } = useList(primaryFamilyId, listId ?? null);
@@ -104,6 +120,26 @@ export function ListDetailPage() {
         }
     };
 
+    // Todos os useMemo precisam estar antes dos returns condicionais
+    const filteredItems = useMemo(() => {
+        if (!searchQuery.trim()) return items;
+        const query = searchQuery.toLowerCase();
+        return items.filter(item =>
+            item.name.toLowerCase().includes(query) ||
+            item.notes?.toLowerCase().includes(query)
+        );
+    }, [items, searchQuery]);
+
+    const uncheckedItems = useMemo(() =>
+        filteredItems.filter((item) => !item.checked),
+        [filteredItems]
+    );
+
+    const checkedItems = useMemo(() =>
+        filteredItems.filter((item) => item.checked),
+        [filteredItems]
+    );
+
     if (listLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
@@ -127,8 +163,93 @@ export function ListDetailPage() {
         );
     }
 
-    const uncheckedItems = items.filter((item) => !item.checked);
-    const checkedItems = items.filter((item) => item.checked);
+    const handleDeleteCompletedItems = () => {
+        if (!primaryFamilyId || !listId) return;
+
+        const itemType = list.type === "shopping"
+            ? t("lists.purchased", { defaultValue: "itens comprados" })
+            : t("lists.completed", { defaultValue: "itens concluídos" });
+
+        setConfirmDialog({
+            isOpen: true,
+            title: t("lists.deleteCompletedTitle", { defaultValue: "Limpar itens concluídos" }),
+            message: t("lists.confirmDeleteCompleted", {
+                defaultValue: `Isso vai deletar permanentemente ${checkedItems.length} ${itemType}. Esta ação não pode ser desfeita.`,
+                count: checkedItems.length,
+                type: itemType
+            }),
+            variant: "warning",
+            onConfirm: async () => {
+                setIsDeleting(true);
+                try {
+                    await Promise.all(checkedItems.map(item =>
+                        deleteListItem(primaryFamilyId, listId, item.id)
+                    ));
+                } catch (error) {
+                    console.error("Erro ao excluir itens concluídos:", error);
+                    alert(t("lists.deleteError", { defaultValue: "Erro ao excluir itens" }));
+                } finally {
+                    setIsDeleting(false);
+                    setConfirmDialog({ ...confirmDialog, isOpen: false });
+                }
+            }
+        });
+    };
+
+    const handleDeleteAllItems = () => {
+        if (!isOwner || !primaryFamilyId || !listId) return;
+
+        setConfirmDialog({
+            isOpen: true,
+            title: t("lists.deleteAllItemsTitle", { defaultValue: "Deletar todos os itens" }),
+            message: t("lists.confirmDeleteAll", {
+                defaultValue: `Isso vai deletar permanentemente TODOS os ${items.length} itens desta lista. Esta ação não pode ser desfeita.`,
+                count: items.length
+            }),
+            variant: "danger",
+            onConfirm: async () => {
+                setIsDeleting(true);
+                try {
+                    await Promise.all(items.map(item =>
+                        deleteListItem(primaryFamilyId, listId, item.id)
+                    ));
+                } catch (error) {
+                    console.error("Erro ao excluir todos os itens:", error);
+                    alert(t("lists.deleteError", { defaultValue: "Erro ao excluir itens" }));
+                } finally {
+                    setIsDeleting(false);
+                    setConfirmDialog({ ...confirmDialog, isOpen: false });
+                }
+            }
+        });
+    };
+
+    const handleDeleteListCascade = () => {
+        if (!isOwner || !primaryFamilyId || !listId) return;
+
+        setConfirmDialog({
+            isOpen: true,
+            title: t("lists.deleteListTitle", { defaultValue: "Deletar lista inteira" }),
+            message: t("lists.confirmDeleteListCascade", {
+                defaultValue: `⚠️ ATENÇÃO: Isso vai deletar a lista "${list.name}" e TODOS os seus ${items.length} itens. Esta ação não pode ser desfeita!`,
+                name: list.name,
+                count: items.length
+            }),
+            variant: "danger",
+            onConfirm: async () => {
+                setIsDeleting(true);
+                try {
+                    await deleteList(primaryFamilyId, listId);
+                    navigate("/lists");
+                } catch (error) {
+                    console.error("Erro ao excluir lista:", error);
+                    alert(t("lists.deleteError", { defaultValue: "Erro ao excluir lista" }));
+                    setIsDeleting(false);
+                    setConfirmDialog({ ...confirmDialog, isOpen: false });
+                }
+            }
+        });
+    };
 
     return (
         <motion.div
@@ -271,6 +392,89 @@ export function ListDetailPage() {
                 </Card>
             ) : (
                 <div className="space-y-4">
+                    {/* Barra de ações - sempre visível quando há itens */}
+                    <Card padding="md" elevated>
+                        <div className="flex items-center justify-between gap-3">
+                            <h3 className="text-sm font-semibold text-muted">
+                                {t("lists.actions", { defaultValue: "Ações" })}
+                            </h3>
+
+                            <div className="flex items-center gap-2">
+                                {/* Busca - disponível para todos */}
+                                <motion.div
+                                    initial={false}
+                                    animate={{ width: showSearch ? "auto" : "40px" }}
+                                    className="flex items-center gap-2 overflow-hidden"
+                                >
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            setShowSearch(!showSearch);
+                                            if (showSearch) setSearchQuery("");
+                                        }}
+                                        title={t("lists.search", { defaultValue: "Buscar" })}
+                                    >
+                                        <Search className="h-4 w-4" />
+                                    </Button>
+                                    <AnimatePresence>
+                                        {showSearch && (
+                                            <motion.input
+                                                initial={{ opacity: 0, width: 0 }}
+                                                animate={{ opacity: 1, width: "160px" }}
+                                                exit={{ opacity: 0, width: 0 }}
+                                                type="text"
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                placeholder={t("lists.searchPlaceholder", { defaultValue: "Buscar..." })}
+                                                className="rounded-lg border border-soft bg-surface px-3 py-1.5 text-sm outline-none transition focus:border-brand"
+                                            />
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
+
+                                {/* Deletar concluídos - disponível para todos */}
+                                {checkedItems.length > 0 && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleDeleteCompletedItems}
+                                        title={t("lists.deleteCompleted", { defaultValue: "Limpar concluídos" })}
+                                        className="text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20"
+                                    >
+                                        <Eraser className="h-4 w-4" />
+                                    </Button>
+                                )}
+
+                                {/* Deletar todos os itens - apenas owner da lista */}
+                                {isOwner && items.length > 0 && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleDeleteAllItems}
+                                        title={t("lists.deleteAllItems", { defaultValue: "Deletar todos os itens" })}
+                                        className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                )}
+
+                                {/* Deletar lista completa - apenas owner da lista */}
+                                {isOwner && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleDeleteListCascade}
+                                        title={t("lists.deleteListCascade", { defaultValue: "Deletar lista inteira" })}
+                                        className="text-red-700 hover:bg-red-100 dark:hover:bg-red-950/30"
+                                    >
+                                        <AlertTriangle className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </Card>
+
                     {uncheckedItems.length > 0 && (
                         <Card padding="lg" elevated>
                             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
@@ -395,6 +599,19 @@ export function ListDetailPage() {
                     )}
                 </div>
             )}
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmDialog.isOpen}
+                onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+                onConfirm={confirmDialog.onConfirm}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                variant={confirmDialog.variant}
+                confirmText={t("actions.confirm", { defaultValue: "Confirmar" })}
+                cancelText={t("actions.cancel", { defaultValue: "Cancelar" })}
+                loading={isDeleting}
+            />
         </motion.div>
     );
 }

@@ -238,7 +238,20 @@
     "noItemsHint": "Add your first item above",
     "confirmDeleteItem": "Delete this item?",
     "notFound": "List not found",
-    "itemsCount": "items"
+    "itemsCount": "items",
+    "actions": "Actions",
+    "search": "Search",
+    "searchPlaceholder": "Search...",
+    "deleteCompleted": "Clear completed",
+    "deleteCompletedTitle": "Clear completed items",
+    "deleteAllItems": "Delete all items",
+    "deleteAllItemsTitle": "Delete all items",
+    "deleteListTitle": "Delete entire list",
+    "deleteListCascade": "Delete entire list",
+    "confirmDeleteCompleted": "This will permanently delete {{count}} {{type}}. This action cannot be undone.",
+    "confirmDeleteAll": "This will permanently delete ALL {{count}} items from this list. This action cannot be undone.",
+    "confirmDeleteListCascade": "⚠️ WARNING: This will delete the list \"{{name}}\" and ALL its {{count}} items. This action cannot be undone!",
+    "deleteError": "Error deleting"
   },
   "family": {
     "title": "Family and guests",

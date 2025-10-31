@@ -106,8 +106,11 @@ service cloud.firestore {
         match /items/{itemId} {
           allow read: if isMaster()
             || isFamilyOwner(familyId)
+            || isFamilyMember(familyId)
             || listHasCollaborator(get(/databases/$(database)/documents/families/$(familyId)/lists/$(listId)).data);
-          allow create, update, delete: if isMaster() || isFamilyOwner(familyId);
+          allow create, update, delete: if isMaster() 
+            || isFamilyOwner(familyId)
+            || isFamilyMember(familyId);
         }
       }
 

@@ -189,7 +189,7 @@ export function BillingPage() {
                       <InfinityIcon className="size-4" /> {t("billing.unlimitedItems", { defaultValue: "Itens ilimitados por lista" })}
                     </span>
                   ) : (
-                    t("billing.itemsPerListInfo", { 
+                    t("billing.itemsPerListInfo", {
                       defaultValue: "Até {{count}} itens por lista",
                       count: currentPlan.limits.itemsPerList
                     })
