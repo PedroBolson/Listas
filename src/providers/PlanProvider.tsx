@@ -58,15 +58,9 @@ export function PlanProvider({ children }: PlanProviderProps) {
   useEffect(() => {
     const colRef = collection(db, "plans");
 
-    // Tentar sem orderBy primeiro para ver se carrega
     const unsubscribe = onSnapshot(
       colRef,
       (snapshot) => {
-        console.log("📦 Plans snapshot received:", {
-          docsCount: snapshot.docs.length,
-          docs: snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
-        });
-
         const parsed = snapshot.docs.map((doc) => {
           const data = doc.data() as PlanDocument;
           return new SubscriptionPlan({
@@ -86,15 +80,12 @@ export function PlanProvider({ children }: PlanProviderProps) {
           const orderB = (b.props as any).order ?? 999;
           return orderA - orderB;
         });
-
-        console.log("📦 Plans carregados:", sorted.map(p => ({ id: p.id, tier: p.tier })));
         
         setPlans(sorted);
         setLoading(false);
         setError(null);
       },
       (err) => {
-        console.error("❌ Erro ao carregar plans:", err);
         setError(err.message ?? "Failed to load plans.");
         setLoading(false);
       },
@@ -104,12 +95,7 @@ export function PlanProvider({ children }: PlanProviderProps) {
   }, []);
 
   const getPlan = useCallback(
-    (planId: string | undefined | null) => {
-      console.log("🔍 getPlan chamado:", { planId, plansCount: plans.length, plansIds: plans.map(p => p.id) });
-      const found = plans.find((plan) => plan.id === planId);
-      console.log("🔍 Plano encontrado:", found ? { id: found.id, tier: found.tier } : "NÃO ENCONTRADO");
-      return found;
-    },
+    (planId: string | undefined | null) => plans.find((plan) => plan.id === planId),
     [plans],
   );
 
