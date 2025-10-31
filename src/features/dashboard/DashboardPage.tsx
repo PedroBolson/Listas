@@ -10,16 +10,19 @@ import { Button } from "../../components/ui/Button";
 import { useAuth } from "../auth/useAuth";
 import { usePlans } from "../../providers/usePlans";
 import { useFamily } from "../../hooks/useFamily";
-import { useFamilyLists } from "../../hooks/useLists";
+import { useFamilyLists, useMaxListItemsCount } from "../../hooks/useLists";
 
 export function DashboardPage() {
   const { domainUser } = useAuth();
   const { t } = useTranslation();
   const { getPlan } = usePlans();
-  
+
   const primaryFamilyId = domainUser?.props.primaryFamilyId ?? null;
   const { family } = useFamily(primaryFamilyId);
   const { lists } = useFamilyLists(primaryFamilyId);
+
+  const listIds = useMemo(() => lists.map(list => list.id), [lists]);
+  const maxItemsInAnyList = useMaxListItemsCount(primaryFamilyId, listIds);
 
   const plan = useMemo(
     () => getPlan(domainUser?.billing?.planId ?? null),
@@ -41,24 +44,26 @@ export function DashboardPage() {
         label: t("dashboard.stats.lists", { defaultValue: "Listas" }),
         value: listsCount,
         max: plan?.limits.listsPerFamily ?? 0,
-        description: t("dashboard.stats.listsDescription", { defaultValue: "Listas criadas" }),
+        description: t("dashboard.stats.listsDescription", { defaultValue: "{{count}} famílias ativas", count: listsCount }),
       },
       {
         icon: Users,
         label: t("dashboard.stats.members", { defaultValue: "Membros" }),
         value: membersCount,
         max: plan?.limits.familyMembers ?? 0,
-        description: t("dashboard.stats.membersDescription", { defaultValue: "Membros ativos" }),
+        description: t("dashboard.stats.membersDescription", { defaultValue: "Controle de acesso para convidados" }),
       },
       {
         icon: Package,
         label: t("dashboard.stats.items", { defaultValue: "Itens" }),
-        value: 0,
+        value: maxItemsInAnyList,
         max: plan?.limits.itemsPerList ?? 0,
-        description: t("dashboard.stats.itemsDescription", { defaultValue: "Itens cadastrados" }),
+        description: maxItemsInAnyList > 0
+          ? t("dashboard.stats.itemsDescriptionWithCount", { defaultValue: "Maior lista: {{count}} itens", count: maxItemsInAnyList })
+          : t("dashboard.stats.itemsDescription", { defaultValue: "Nenhum item cadastrado" }),
       },
     ];
-  }, [lists.length, activeMembers, plan, t]);
+  }, [lists.length, activeMembers, maxItemsInAnyList, plan, t]);
 
   return (
     <motion.div
@@ -73,16 +78,19 @@ export function DashboardPage() {
             {t("dashboard.title", { defaultValue: "Dashboard" })}
           </h1>
           <p className="mt-1 text-sm text-muted">
-            {t("dashboard.subtitle", { 
-              defaultValue: "Bem-vindo de volta, {{name}}", 
-              name: domainUser?.displayName || "Usuário" 
+            {t("dashboard.subtitle", {
+              defaultValue: "Bem-vindo de volta, {{name}}",
+              name: domainUser?.displayName || "Usuário"
             })}
           </p>
         </div>
         {plan && (
           <StatusPill tone="info" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
-            {t(`plans.${plan.translationKey}.name`, { defaultValue: plan.name })}
+            {plan.translationKey
+              ? t(`plans.${plan.translationKey}.name`, { defaultValue: plan.name || "Plano" })
+              : plan.name || t("plans.currentPlan", { defaultValue: "Plano atual" })
+            }
           </StatusPill>
         )}
       </div>
@@ -92,7 +100,7 @@ export function DashboardPage() {
           const Icon = stat.icon;
           const progress = stat.max > 0 ? (stat.value / stat.max) * 100 : 0;
           const isUnlimited = !Number.isFinite(stat.max);
-          
+
           return (
             <Card key={stat.label} padding="lg" elevated>
               <div className="flex items-center justify-between">
@@ -151,7 +159,7 @@ export function DashboardPage() {
             lists.slice(0, 5).map((list) => (
               <Link
                 key={list.id}
-                to={`/lists`}
+                to={`/lists/${list.id}`}
                 className="block rounded-2xl border border-soft bg-surface-alt p-4 transition hover:border-brand hover:bg-elevated"
               >
                 <div className="flex items-center justify-between">

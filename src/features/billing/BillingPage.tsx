@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { motion, type Variants } from "framer-motion";
-import { CreditCard, TrendingUp, Users, ClipboardList, Package, ArrowUpRight, Sparkles, Infinity as InfinityIcon, Check } from "lucide-react";
+import { CreditCard, Users, ClipboardList, Package, ArrowUpRight, Sparkles, Infinity as InfinityIcon, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -68,12 +68,6 @@ export function BillingPage() {
         current: activeMembers,
         max: currentPlan.limits.familyMembers,
       },
-      {
-        icon: Package,
-        label: t("billing.itemsUsage", { defaultValue: "Itens por lista" }),
-        current: 0, // TODO: calcular itens reais quando tivermos listas com items
-        max: currentPlan.limits.itemsPerList,
-      },
     ];
   }, [currentPlan, lists.length, activeMembers, t]);
 
@@ -117,48 +111,37 @@ export function BillingPage() {
 
       <motion.div variants={item}>
         <Card className="p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4">
-              <div className="rounded-xl bg-linear-to-br from-blue-500 to-purple-600 p-3">
-                <CreditCard className="size-6 text-white" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold">
-                    {t(`${currentPlan.translationKey}.name`, { defaultValue: currentPlan.name || currentPlan.tier })}
-                  </h2>
-                  <StatusPill
-                    tone={billing.status === "active" ? "success" : "warning"}
-                  >
-                    {t(`billing.status.${billing.status}`, {
-                      defaultValue: billing.status,
-                    })}
-                  </StatusPill>
-                </div>
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  {t(`${currentPlan.translationKey}.description`, { defaultValue: currentPlan.description || '' })}
-                </p>
-                {currentPlan.props.monthlyPrice > 0 && (
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-3xl font-bold">
-                      R$ {currentPlan.props.monthlyPrice}
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      / {t("billing.month", { defaultValue: "mês" })}
-                    </span>
-                  </div>
-                )}
-              </div>
+          <div className="flex items-start gap-4">
+            <div className="rounded-xl bg-linear-to-br from-blue-500 to-purple-600 p-3">
+              <CreditCard className="size-6 text-white" />
             </div>
-            {billing.status === "active" && currentPlan.tier !== "master" && (
-              <Button
-                variant="outline"
-                size="sm"
-                icon={<TrendingUp className="size-4" />}
-              >
-                {t("billing.upgrade", { defaultValue: "Upgrade" })}
-              </Button>
-            )}
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold">
+                  {t(`${currentPlan.translationKey}.name`, { defaultValue: currentPlan.name || currentPlan.tier })}
+                </h2>
+                <StatusPill
+                  tone={billing.status === "active" ? "success" : "warning"}
+                >
+                  {t(`billing.status.${billing.status}`, {
+                    defaultValue: billing.status,
+                  })}
+                </StatusPill>
+              </div>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                {t(`${currentPlan.translationKey}.description`, { defaultValue: currentPlan.description || '' })}
+              </p>
+              {currentPlan.props.monthlyPrice > 0 && (
+                <div className="mt-3 flex items-baseline gap-1">
+                  <span className="text-3xl font-bold">
+                    R$ {currentPlan.props.monthlyPrice}
+                  </span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    / {t("billing.month", { defaultValue: "mês" })}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mt-6 space-y-4">
@@ -190,6 +173,30 @@ export function BillingPage() {
                 </div>
               );
             })}
+
+            {/* Info de itens por lista (sem contador) */}
+            <div className="mt-4 rounded-xl border border-soft bg-surface-alt p-4">
+              <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="size-4 text-gray-500" />
+                  <span className="text-sm font-medium">
+                    {t("billing.itemsPerList", { defaultValue: "Itens por lista" })}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 sm:text-right">
+                  {isUnlimited(currentPlan.limits.itemsPerList) ? (
+                    <span className="inline-flex items-center gap-1">
+                      <InfinityIcon className="size-4" /> {t("billing.unlimitedItems", { defaultValue: "Itens ilimitados por lista" })}
+                    </span>
+                  ) : (
+                    t("billing.itemsPerListInfo", { 
+                      defaultValue: "Até {{count}} itens por lista",
+                      count: currentPlan.limits.itemsPerList
+                    })
+                  )}
+                </p>
+              </div>
+            </div>
           </div>
         </Card>
       </motion.div>

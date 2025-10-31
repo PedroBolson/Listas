@@ -337,7 +337,7 @@ export function ListDetailPage() {
                                     >
                                         <button
                                             onClick={() => handleToggleItem(item.id, item.checked)}
-                                            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 border-success/80 bg-success text-white transition hover:bg-success/90"
+                                            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 border-green-600 bg-green-600 text-white transition hover:bg-green-700"
                                         >
                                             <Check className="h-4 w-4" />
                                         </button>

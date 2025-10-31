@@ -125,3 +125,39 @@ export function useListItemsCount(familyId: string | null, listId: string) {
 
     return { itemsCount, completedCount };
 }
+
+export function useMaxListItemsCount(familyId: string | null, listIds: string[]) {
+    const [maxItemsCount, setMaxItemsCount] = useState(0);
+
+    useEffect(() => {
+        if (!familyId || listIds.length === 0) {
+            setMaxItemsCount(0);
+            return;
+        }
+
+        const unsubscribes: (() => void)[] = [];
+        const itemsCounts = new Map<string, number>();
+
+        listIds.forEach((listId) => {
+            const unsubscribe = subscribeToListItems(
+                familyId,
+                listId,
+                (data) => {
+                    itemsCounts.set(listId, data.length);
+                    const max = Math.max(...Array.from(itemsCounts.values()));
+                    setMaxItemsCount(max);
+                },
+                (err) => {
+                    console.error(`Error loading items for list ${listId}:`, err);
+                }
+            );
+            unsubscribes.push(unsubscribe);
+        });
+
+        return () => {
+            unsubscribes.forEach(unsub => unsub());
+        };
+    }, [familyId, listIds]);
+
+    return maxItemsCount;
+}

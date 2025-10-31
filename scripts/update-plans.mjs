@@ -71,6 +71,7 @@ async function updatePlans() {
 
         const updates = {
             order: planOrder[planId],
+            translationKey: planId,
             name: translations[planId].name,
             description: translations[planId].description,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -79,6 +80,7 @@ async function updatePlans() {
         await planRef.update(updates);
         console.log(`  ✅ Plano ${planId} atualizado:`);
         console.log(`     - order: ${updates.order}`);
+        console.log(`     - translationKey: ${updates.translationKey}`);
         console.log(`     - name: ${updates.name}`);
         console.log(`     - description: ${updates.description}`);
     }
