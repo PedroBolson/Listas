@@ -1,0 +1,320 @@
+{
+  "brand": {
+    "name": "ListsHub",
+    "tagline": "Organize tudo, compartilhe com quem importa e mantenha o controle do negócio."
+  },
+  "actions": {
+    "signIn": "Entrar com Google",
+    "signOut": "Sair",
+    "upgrade": "Quero ser titular",
+    "managePlan": "Gerenciar plano",
+    "createList": "Criar nova lista",
+    "invitePerson": "Convidar pessoa",
+    "viewAll": "Ver tudo",
+    "toggleTheme": "Alternar tema",
+    "switchLanguage": "Mudar idioma",
+    "dismiss": "Fechar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "lightMode": "Claro",
+    "darkMode": "Escuro",
+    "createFamily": "Criar Família",
+    "close": "Fechar",
+    "add": "Adicionar",
+    "showAdvanced": "Adicionar notas/quantidade",
+    "hideAdvanced": "Ocultar opções",
+    "backToLists": "Voltar para listas"
+  },
+  "navigation": {
+    "dashboard": "Painel",
+    "lists": "Listas",
+    "family": "Família",
+    "billing": "Planos",
+    "masterConsole": "Console Master"
+  },
+  "auth": {
+    "signInHeading": "Entrar para acessar suas listas",
+    "signUpHeading": "Criar conta titular",
+    "subtitle": "Use seu e-mail e senha para acessar as listas compartilhadas com você.",
+    "firstAccessHint": "Crie a conta titular para montar sua família e convidar quem quiser.",
+    "email": "E-mail",
+    "password": "Senha",
+    "name": "Nome completo",
+    "signInButton": "Entrar",
+    "signUpButton": "Criar conta titular",
+    "switchToRegister": "Quero criar uma conta",
+    "switchToLogin": "Já tenho conta",
+    "forgotPassword": "Esqueci minha senha",
+    "resetSent": "Enviamos um link de redefinição para o seu e-mail.",
+    "becomeTitular": "Virar titular agora",
+    "removed": "Você não faz mais parte desta família. Torne-se titular para continuar.",
+    "upgradeDescription": "Crie sua própria família de listas, convide quem quiser e gerencie tudo em um único lugar.",
+    "errors": {
+      "requiredEmail": "Informe um e-mail válido.",
+      "requiredPassword": "Informe sua senha.",
+      "requiredName": "Informe seu nome completo.",
+      "invalidCredentials": "E-mail ou senha inválidos.",
+      "emailInUse": "Este e-mail já está em uso.",
+      "weakPassword": "Use uma senha com pelo menos 6 caracteres.",
+      "tooManyRequests": "Muitas tentativas. Aguarde alguns instantes e tente novamente.",
+      "generic": "Não foi possível concluir a ação. Tente novamente."
+    }
+  },
+  "status": {
+    "active": "Ativo",
+    "grace_period": "Em período de carência",
+    "suspended": "Suspenso",
+    "cancelled": "Cancelado",
+    "unlimited": "Ilimitado",
+    "pending": "Pendente"
+  },
+  "general": {
+    "you": "Você",
+    "member": "Membro",
+    "members": "Membros",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar..."
+  },
+  "roles": {
+    "master": "Master",
+    "titular": "Titular",
+    "member": "Membro",
+    "guest": "Convidado"
+  },
+  "plans": {
+    "currentPlan": "Plano atual",
+    "free": {
+      "name": "Grátis",
+      "description": "Perfeito para uso pessoal"
+    },
+    "plus": {
+      "name": "Plus",
+      "description": "Para pequenas famílias e times"
+    },
+    "premium": {
+      "name": "Premium",
+      "description": "Para grandes famílias e usuários avançados"
+    },
+    "master": {
+      "name": "Master",
+      "description": "Acesso ilimitado a tudo"
+    },
+    "familyLimit": "Famílias",
+    "membersLimit": "Membros",
+    "listsLimit": "Listas por família",
+    "itemsLimit": "Itens por lista",
+    "collaboratorsLimit": "Colaboradores por lista",
+    "perks": "Benefícios",
+    "pricePerMonth": "{{value}}/mês",
+    "pricePerYear": "{{value}}/ano",
+    "noneAssigned": "Nenhum plano vinculado ainda.",
+    "choosePlan": "Escolha seu plano",
+    "choosePlanHint": "Selecione a opção ideal para começar a organizar tudo com a família.",
+    "loading": "Carregando planos...",
+    "selectionError": "Não foi possível aplicar o plano.",
+    "selectFree": "Começar agora",
+    "selectPlan": "Escolher plano",
+    "currentBadge": "Atual",
+    "limits": "Limites",
+    "features": "Recursos",
+    "catalog": {
+      "free": {
+        "name": "Family Free",
+        "description": "Organização essencial com tudo para começar a compartilhar listas.",
+        "perks": [
+          "3 integrantes em tempo real",
+          "Até 3 listas vivas",
+          "50 itens monitorados por lista"
+        ]
+      },
+      "plus": {
+        "name": "Family Plus",
+        "description": "Planos flexíveis para famílias maiores com controle por lista.",
+        "perks": [
+          "Convidados ilimitados dentro do limite do plano",
+          "10 listas com histórico estendido",
+          "Categorias inteligentes para compras e tarefas"
+        ]
+      },
+      "premium": {
+        "name": "Family Premium",
+        "description": "Tudo ilimitado para titulares exigentes e famílias super conectadas.",
+        "perks": [
+          "50 listas com automações",
+          "Relatórios semanais de uso",
+          "Suporte prioritário 24/7"
+        ]
+      },
+      "master": {
+        "name": "Master",
+        "description": "Acesso total para administradores do negócio com visão 360º do produto.",
+        "perks": [
+          "Dashboard executivo",
+          "Gerenciamento completo de assinaturas",
+          "Criação e remoção de contas",
+          "Concessão de planos vitalícios"
+        ]
+      }
+    }
+  },
+  "dashboard": {
+    "welcomeMaster": "Central de controle master",
+    "welcomeTitular": "Olá {{name}}, vamos organizar a família hoje?",
+    "welcomeMember": "Bem-vindo! Estas são as listas que compartilharam com você.",
+    "listsSummary": "Resumo de listas",
+    "recentActivity": "Atividade recente",
+    "emptyState": "Nenhuma atividade por aqui ainda.",
+    "stats": {
+      "listsDescription": "{{count}} famílias ativas",
+      "membersDescription": "Controle de acesso para convidados",
+      "checkedLabel": "Itens concluídos",
+      "checkedDescription": "Últimos 30 dias",
+      "uptimeLabel": "Tempo médio por lista",
+      "uptimeDescription": "Atualizado em tempo real",
+      "activityLabel": "Atividade",
+      "activityDescription": "Eventos recentes sincronizados"
+    }
+  },
+  "lists": {
+    "title": "Listas da família",
+    "subtitle": "Controle o que precisa ser comprado, feito ou lembrado e compartilhe com quem fizer sentido.",
+    "sharedWith": "Compartilhado com",
+    "ownerOnly": "Somente o titular pode excluir itens.",
+    "empty": "Ainda não existem listas por aqui.",
+    "emptyState": "Você ainda não tem nenhuma lista. Crie sua primeira lista para começar!",
+    "smartFilters": "Filtros inteligentes",
+    "createList": "Criar Lista",
+    "listName": "Nome da lista",
+    "listDescription": "Descrição (opcional)",
+    "creating": "Criando...",
+    "samples": {
+      "weeklyGroceries": "Compras da semana",
+      "schoolKit": "Kit escolar",
+      "beachHouse": "Lista casa de praia"
+    },
+    "activity": {
+      "itemPurchased": "{{actor}} marcou \"{{item}}\" como comprado",
+      "itemAdded": "{{actor}} adicionou \"{{item}}\"",
+      "listArchived": "{{actor}} arquivou a lista"
+    },
+    "items": {
+      "organicCoffee": "Café orgânico",
+      "hbPencil": "Lápis HB",
+      "summerKit": "Kit verão"
+    },
+    "remaining": "{{count}} itens restantes",
+    "descriptions": {
+      "school": "Materiais para o novo semestre.",
+      "beach": "Checklist para o final de semana."
+    },
+    "accessHint": "Garanta que cada convidado veja somente as listas certas. Configure agora em <strong>{{section}}</strong>.",
+    "addItemPlaceholder": "Adicionar item...",
+    "itemNotes": "Notas (opcional)...",
+    "itemQuantity": "Quantidade (opcional)...",
+    "createdBy": "Criado por",
+    "completedBy": "Concluído por",
+    "pending": "Pendentes",
+    "completed": "Concluídos",
+    "noItems": "Nenhum item ainda",
+    "noItemsHint": "Adicione seu primeiro item acima",
+    "confirmDeleteItem": "Excluir este item?",
+    "notFound": "Lista não encontrada",
+    "itemsCount": "itens"
+  },
+  "family": {
+    "title": "Família e convidados",
+    "subtitle": "Escolha quem participa, limite o acesso por lista e mantenha tudo em ordem.",
+    "members": "Integrantes",
+    "invited": "Convidados",
+    "pending": "Pendentes",
+    "removed": "Removidos recentemente",
+    "permissions": "Listas visíveis",
+    "noFamily": "Você ainda não tem uma família",
+    "noFamilyDescription": "Crie sua primeira família para começar a organizar e compartilhar listas com quem você quiser.",
+    "selectFamily": "Selecionar família",
+    "switchFamily": "Trocar de família",
+    "inviteMember": "Convidar membro",
+    "maxFamiliesReached": "Você atingiu o limite de {{max}} famílias. Faça upgrade para criar mais.",
+    "totalMembers": "Total de Membros",
+    "you": "você",
+    "titular": "Titular",
+    "member": "Membro",
+    "actions": {
+      "detach": "Remover da família",
+      "grantTitular": "Transformar em titular",
+      "assignLists": "Gerenciar acesso",
+      "removeMember": "Remover membro"
+    },
+    "emptyPending": "Nenhum convite pendente.",
+    "emptyRemoved": "Sem remoções recentes.",
+    "emptyMembers": "Nenhum membro na família ainda. Convide alguém para começar!"
+  },
+  "billing": {
+    "title": "Plano e Cobrança",
+    "subtitle": "Gerencie sua assinatura e uso",
+    "noPlan": "Nenhum plano ativo",
+    "selectPlan": "Selecione um plano para começar",
+    "free": "Grátis",
+    "month": "mês",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "otherPlans": "Outros Planos",
+    "listsUsage": "Listas",
+    "membersUsage": "Membros",
+    "itemsUsage": "Itens por lista",
+    "lists": "listas",
+    "members": "membros",
+    "items": "itens",
+    "status": {
+      "active": "Ativo",
+      "grace_period": "Período de carência",
+      "suspended": "Suspenso",
+      "cancelled": "Cancelado"
+    },
+    "usage": "Uso atual",
+    "renewal": "Renova em {{date}}",
+    "overLimit": "Você está no limite. Considere fazer upgrade.",
+    "upgradeTitle": "Explore outros planos",
+    "yourPlan": "Seu Plano",
+    "currentUsage": "Uso Atual"
+  },
+  "master": {
+    "title": "Console Master",
+    "subtitle": "Ferramentas avançadas para controlar todo o negócio.",
+    "overview": "Visão Geral",
+    "statistics": "Estatísticas",
+    "totalUsers": "Total de Usuários",
+    "totalFamilies": "Total de Famílias",
+    "totalLists": "Total de Listas",
+    "activeTitulars": "Titulares Ativos",
+    "plansManagement": "Gerenciamento de Planos",
+    "usersManagement": "Gerenciamento de Usuários",
+    "editPlan": "Editar Plano",
+    "editUser": "Editar Usuário",
+    "families": "Famílias ativas",
+    "users": "Usuários",
+    "lifetimeGranted": "Planos vitalícios concedidos",
+    "planName": "Nome do Plano",
+    "monthlyPrice": "Preço Mensal (BRL)",
+    "familyMembers": "Membros da Família",
+    "listsPerFamily": "Listas por Família",
+    "itemsPerList": "Itens por Lista",
+    "displayName": "Nome de Exibição",
+    "role": "Função",
+    "billingPlan": "Plano de Cobrança",
+    "accountStatus": "Status da Conta",
+    "saving": "Salvando...",
+    "actions": {
+      "createTitular": "Criar titular vitalício",
+      "last30": "últimos 30 dias",
+      "familyHealth": "Saúde das famílias",
+      "atRisk": "Famílias em risco",
+      "needingSupport": "Esperando suporte",
+      "privileges": "Privilégios e limites",
+      "helpText": "Conceda planos vitalícios, ajuste limites personalizados e desconecte qualquer membro sem afetar as listas.",
+      "auditLog": "Abrir auditoria"
+    }
+  }
+}

@@ -1,0 +1,234 @@
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Shield, Users, ClipboardList, TrendingUp, Settings, Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import { Card } from "../../components/ui/Card";
+import { Button } from "../../components/ui/Button";
+import { StatusPill } from "../../components/feedback/StatusPill";
+import { useAuth } from "../auth/useAuth";
+import { COLLECTIONS } from "../../domain/models";
+
+interface Stats {
+  totalUsers: number;
+  totalFamilies: number;
+  totalLists: number;
+  activeTitulars: number;
+}
+
+export function MasterConsolePage() {
+  const { domainUser } = useAuth();
+  const { t } = useTranslation();
+  const [stats, setStats] = useState<Stats>({
+    totalUsers: 0,
+    totalFamilies: 0,
+    totalLists: 0,
+    activeTitulars: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const [usersSnap, familiesSnap] = await Promise.all([
+          getDocs(collection(db, COLLECTIONS.USERS)),
+          getDocs(collection(db, COLLECTIONS.FAMILIES)),
+        ]);
+
+        let listsCount = 0;
+        for (const familyDoc of familiesSnap.docs) {
+          const listsSnap = await getDocs(
+            collection(db, COLLECTIONS.FAMILIES, familyDoc.id, "lists")
+          );
+          listsCount += listsSnap.size;
+        }
+
+        const activeTitulars = usersSnap.docs.filter(
+          (doc) => doc.data().role === "titular" && doc.data().status === "active"
+        ).length;
+
+        setStats({
+          totalUsers: usersSnap.size,
+          totalFamilies: familiesSnap.size,
+          totalLists: listsCount,
+          activeTitulars,
+        });
+      } catch (error) {
+        console.error("Erro ao carregar estatísticas:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (domainUser?.isMaster) {
+      loadStats();
+    }
+  }, [domainUser?.isMaster]);
+
+  if (!domainUser?.isMaster) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card padding="lg" elevated className="text-center">
+          <Shield className="mx-auto h-16 w-16 text-danger" />
+          <h2 className="mt-4 text-xl font-semibold text-primary">
+            {t("master.accessDenied", { defaultValue: "Acesso Negado" })}
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            {t("master.masterOnly", { defaultValue: "Apenas usuários Master podem acessar esta página" })}
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  const statCards = [
+    {
+      icon: Users,
+      label: t("master.totalUsers", { defaultValue: "Total de Usuários" }),
+      value: stats.totalUsers,
+      color: "brand",
+    },
+    {
+      icon: Shield,
+      label: t("master.activeTitulars", { defaultValue: "Titulares Ativos" }),
+      value: stats.activeTitulars,
+      color: "success",
+    },
+    {
+      icon: Users,
+      label: t("master.totalFamilies", { defaultValue: "Total de Famílias" }),
+      value: stats.totalFamilies,
+      color: "accent",
+    },
+    {
+      icon: ClipboardList,
+      label: t("master.totalLists", { defaultValue: "Total de Listas" }),
+      value: stats.totalLists,
+      color: "warning",
+    },
+  ];
+
+  return (
+    <motion.div
+      className="mx-auto max-w-6xl space-y-6 p-6"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+          <Shield className="h-6 w-6" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-primary">
+            {t("master.console", { defaultValue: "Console Master" })}
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            {t("master.subtitle", { defaultValue: "Controle total da plataforma" })}
+          </p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} padding="lg" elevated>
+              <div className="animate-pulse space-y-3">
+                <div className="h-12 w-12 rounded-2xl bg-surface-alt" />
+                <div className="h-8 w-20 rounded bg-surface-alt" />
+                <div className="h-4 w-24 rounded bg-surface-alt" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {statCards.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={stat.label} padding="lg" elevated>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-${stat.color}/10 text-${stat.color}`}>
+                  <Icon className="h-6 w-6" />
+                </div>
+                <p className="mt-4 text-3xl font-bold text-primary">{stat.value}</p>
+                <p className="mt-1 text-sm text-muted">{stat.label}</p>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card padding="lg" elevated>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-soft text-brand">
+              <Users className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary">
+                {t("master.manageUsers", { defaultValue: "Gerenciar Usuários" })}
+              </h3>
+              <p className="text-xs text-muted">
+                {t("master.manageUsersHint", { defaultValue: "Ver, editar e controlar usuários" })}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <input
+                type="text"
+                placeholder={t("master.searchUsers", { defaultValue: "Buscar usuários..." })}
+                className="w-full rounded-xl border border-soft bg-surface-alt py-2 pl-10 pr-4 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/40"
+              />
+            </div>
+          </div>
+        </Card>
+
+        <Card padding="lg" elevated>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success">
+              <Settings className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary">
+                {t("master.systemSettings", { defaultValue: "Configurações do Sistema" })}
+              </h3>
+              <p className="text-xs text-muted">
+                {t("master.systemSettingsHint", { defaultValue: "Ajustes globais da plataforma" })}
+              </p>
+            </div>
+          </div>
+          <Button className="mt-4 w-full gap-2" size="sm">
+            <Settings className="h-4 w-4" />
+            {t("master.openSettings", { defaultValue: "Abrir configurações" })}
+          </Button>
+        </Card>
+      </div>
+
+      <Card padding="lg" elevated>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-primary">
+              {t("master.recentActivity", { defaultValue: "Atividade Recente" })}
+            </h3>
+            <p className="mt-1 text-sm text-muted">
+              {t("master.recentActivityHint", { defaultValue: "Últimas ações na plataforma" })}
+            </p>
+          </div>
+          <StatusPill tone="info" className="gap-2">
+            <TrendingUp className="h-4 w-4" />
+            {t("master.live", { defaultValue: "Ao vivo" })}
+          </StatusPill>
+        </div>
+        <div className="mt-6 space-y-3">
+          <div className="rounded-xl border border-dashed border-soft bg-surface-alt p-8 text-center">
+            <p className="text-sm text-muted">
+              {t("master.noActivityYet", { defaultValue: "Nenhuma atividade registrada ainda" })}
+            </p>
+          </div>
+        </div>
+      </Card>
+    </motion.div>
+  );
+}

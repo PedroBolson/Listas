@@ -1,0 +1,320 @@
+{
+  "brand": {
+    "name": "ListsHub",
+    "tagline": "Organize everything, share with who matters, and keep control of your business."
+  },
+  "actions": {
+    "signIn": "Sign in with Google",
+    "signOut": "Sign out",
+    "upgrade": "I want to be titular",
+    "managePlan": "Manage plan",
+    "createList": "Create new list",
+    "invitePerson": "Invite person",
+    "viewAll": "View all",
+    "toggleTheme": "Toggle theme",
+    "switchLanguage": "Switch language",
+    "dismiss": "Dismiss",
+    "delete": "Delete",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "lightMode": "Light",
+    "darkMode": "Dark",
+    "createFamily": "Create Family",
+    "close": "Close",
+    "add": "Add",
+    "showAdvanced": "Add notes/quantity",
+    "hideAdvanced": "Hide options",
+    "backToLists": "Back to lists"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "lists": "Lists",
+    "family": "Family",
+    "billing": "Plans",
+    "masterConsole": "Master Console"
+  },
+  "auth": {
+    "signInHeading": "Sign in to access your lists",
+    "signUpHeading": "Create titular account",
+    "subtitle": "Use your email and password to access the lists shared with you.",
+    "firstAccessHint": "Create a titular account to build your family and invite whoever you want.",
+    "email": "Email",
+    "password": "Password",
+    "name": "Full name",
+    "signInButton": "Sign in",
+    "signUpButton": "Create titular account",
+    "switchToRegister": "I want to create an account",
+    "switchToLogin": "I already have an account",
+    "forgotPassword": "Forgot my password",
+    "resetSent": "We've sent a reset link to your email.",
+    "becomeTitular": "Become titular now",
+    "removed": "You're no longer part of this family. Become a titular to continue.",
+    "upgradeDescription": "Create your own family of lists, invite whoever you want, and manage everything in one place.",
+    "errors": {
+      "requiredEmail": "Please enter a valid email.",
+      "requiredPassword": "Please enter your password.",
+      "requiredName": "Please enter your full name.",
+      "invalidCredentials": "Invalid email or password.",
+      "emailInUse": "This email is already in use.",
+      "weakPassword": "Use a password with at least 6 characters.",
+      "tooManyRequests": "Too many attempts. Wait a moment and try again.",
+      "generic": "Unable to complete the action. Please try again."
+    }
+  },
+  "status": {
+    "active": "Active",
+    "grace_period": "Grace period",
+    "suspended": "Suspended",
+    "cancelled": "Cancelled",
+    "unlimited": "Unlimited",
+    "pending": "Pending"
+  },
+  "general": {
+    "you": "You",
+    "member": "Member",
+    "members": "Members",
+    "search": "Search",
+    "searchPlaceholder": "Search..."
+  },
+  "roles": {
+    "master": "Master",
+    "titular": "Titular",
+    "member": "Member",
+    "guest": "Guest"
+  },
+  "plans": {
+    "currentPlan": "Current plan",
+    "free": {
+      "name": "Free",
+      "description": "Perfect for personal use"
+    },
+    "plus": {
+      "name": "Plus",
+      "description": "For small families and teams"
+    },
+    "premium": {
+      "name": "Premium",
+      "description": "For large families and power users"
+    },
+    "master": {
+      "name": "Master",
+      "description": "Unlimited access to everything"
+    },
+    "familyLimit": "Families",
+    "membersLimit": "Members",
+    "listsLimit": "Lists per family",
+    "itemsLimit": "Items per list",
+    "collaboratorsLimit": "Collaborators per list",
+    "perks": "Benefits",
+    "pricePerMonth": "{{value}}/month",
+    "pricePerYear": "{{value}}/year",
+    "noneAssigned": "No plan assigned yet.",
+    "choosePlan": "Choose your plan",
+    "choosePlanHint": "Select the ideal option to start organizing everything with your family.",
+    "loading": "Loading plans...",
+    "selectionError": "Could not apply the plan.",
+    "selectFree": "Start now",
+    "selectPlan": "Choose plan",
+    "currentBadge": "Current",
+    "limits": "Limits",
+    "features": "Features",
+    "catalog": {
+      "free": {
+        "name": "Family Free",
+        "description": "Essential organization with everything to start sharing lists.",
+        "perks": [
+          "3 real-time members",
+          "Up to 3 active lists",
+          "50 tracked items per list"
+        ]
+      },
+      "plus": {
+        "name": "Family Plus",
+        "description": "Flexible plans for larger families with per-list control.",
+        "perks": [
+          "Unlimited guests within plan limit",
+          "10 lists with extended history",
+          "Smart categories for shopping and tasks"
+        ]
+      },
+      "premium": {
+        "name": "Family Premium",
+        "description": "Everything unlimited for demanding titulars and super-connected families.",
+        "perks": [
+          "50 lists with automations",
+          "Weekly usage reports",
+          "24/7 priority support"
+        ]
+      },
+      "master": {
+        "name": "Master",
+        "description": "Full access for business administrators with 360º product vision.",
+        "perks": [
+          "Executive dashboard",
+          "Complete subscription management",
+          "Account creation and removal",
+          "Lifetime plan grants"
+        ]
+      }
+    }
+  },
+  "dashboard": {
+    "welcomeMaster": "Master control center",
+    "welcomeTitular": "Hello {{name}}, let's organize the family today?",
+    "welcomeMember": "Welcome! These are the lists shared with you.",
+    "listsSummary": "Lists summary",
+    "recentActivity": "Recent activity",
+    "emptyState": "No activity here yet.",
+    "stats": {
+      "listsDescription": "{{count}} active families",
+      "membersDescription": "Guest access control",
+      "checkedLabel": "Completed items",
+      "checkedDescription": "Last 30 days",
+      "uptimeLabel": "Average time per list",
+      "uptimeDescription": "Updated in real-time",
+      "activityLabel": "Activity",
+      "activityDescription": "Synced recent events"
+    }
+  },
+  "lists": {
+    "title": "Family lists",
+    "subtitle": "Control what needs to be bought, done, or remembered and share with whoever makes sense.",
+    "sharedWith": "Shared with",
+    "ownerOnly": "Only the titular can delete items.",
+    "empty": "No lists here yet.",
+    "emptyState": "You don't have any lists yet. Create your first list to get started!",
+    "smartFilters": "Smart filters",
+    "createList": "Create List",
+    "listName": "List name",
+    "listDescription": "Description (optional)",
+    "creating": "Creating...",
+    "samples": {
+      "weeklyGroceries": "Weekly groceries",
+      "schoolKit": "School kit",
+      "beachHouse": "Beach house list"
+    },
+    "activity": {
+      "itemPurchased": "{{actor}} marked \"{{item}}\" as purchased",
+      "itemAdded": "{{actor}} added \"{{item}}\"",
+      "listArchived": "{{actor}} archived the list"
+    },
+    "items": {
+      "organicCoffee": "Organic coffee",
+      "hbPencil": "HB pencil",
+      "summerKit": "Summer kit"
+    },
+    "remaining": "{{count}} items remaining",
+    "descriptions": {
+      "school": "Materials for the new semester.",
+      "beach": "Checklist for the weekend."
+    },
+    "accessHint": "Ensure each guest sees only the right lists. Configure now in <strong>{{section}}</strong>.",
+    "addItemPlaceholder": "Add item...",
+    "itemNotes": "Notes (optional)...",
+    "itemQuantity": "Quantity (optional)...",
+    "createdBy": "Created by",
+    "completedBy": "Completed by",
+    "pending": "Pending",
+    "completed": "Completed",
+    "noItems": "No items yet",
+    "noItemsHint": "Add your first item above",
+    "confirmDeleteItem": "Delete this item?",
+    "notFound": "List not found",
+    "itemsCount": "items"
+  },
+  "family": {
+    "title": "Family and guests",
+    "subtitle": "Choose who participates, limit access per list, and keep everything in order.",
+    "members": "Members",
+    "invited": "Invited",
+    "pending": "Pending",
+    "removed": "Recently removed",
+    "permissions": "Visible lists",
+    "noFamily": "You don't have a family yet",
+    "noFamilyDescription": "Create your first family to start organizing and sharing lists with whoever you want.",
+    "selectFamily": "Select family",
+    "switchFamily": "Switch family",
+    "inviteMember": "Invite member",
+    "maxFamiliesReached": "You've reached the limit of {{max}} families. Upgrade to create more.",
+    "totalMembers": "Total Members",
+    "you": "you",
+    "titular": "Owner",
+    "member": "Member",
+    "actions": {
+      "detach": "Remove from family",
+      "grantTitular": "Make titular",
+      "assignLists": "Manage access",
+      "removeMember": "Remove member"
+    },
+    "emptyPending": "No pending invitations.",
+    "emptyRemoved": "No recent removals.",
+    "emptyMembers": "No family members yet. Invite someone to get started!"
+  },
+  "billing": {
+    "title": "Plan and Billing",
+    "subtitle": "Manage your subscription and usage",
+    "noPlan": "No active plan",
+    "selectPlan": "Select a plan to get started",
+    "free": "Free",
+    "month": "month",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "otherPlans": "Other Plans",
+    "listsUsage": "Lists",
+    "membersUsage": "Members",
+    "itemsUsage": "Items per list",
+    "lists": "lists",
+    "members": "members",
+    "items": "items",
+    "status": {
+      "active": "Active",
+      "grace_period": "Grace period",
+      "suspended": "Suspended",
+      "cancelled": "Cancelled"
+    },
+    "usage": "Current usage",
+    "renewal": "Renews on {{date}}",
+    "overLimit": "You're at the limit. Consider upgrading.",
+    "upgradeTitle": "Explore other plans",
+    "yourPlan": "Your Plan",
+    "currentUsage": "Current Usage"
+  },
+  "master": {
+    "title": "Master Console",
+    "subtitle": "Advanced tools to control the entire business.",
+    "overview": "Overview",
+    "statistics": "Statistics",
+    "totalUsers": "Total Users",
+    "totalFamilies": "Total Families",
+    "totalLists": "Total Lists",
+    "activeTitulars": "Active Titulars",
+    "plansManagement": "Plans Management",
+    "usersManagement": "Users Management",
+    "editPlan": "Edit Plan",
+    "editUser": "Edit User",
+    "families": "Active families",
+    "users": "Users",
+    "lifetimeGranted": "Lifetime plans granted",
+    "planName": "Plan Name",
+    "monthlyPrice": "Monthly Price (BRL)",
+    "familyMembers": "Family Members",
+    "listsPerFamily": "Lists per Family",
+    "itemsPerList": "Items per List",
+    "displayName": "Display Name",
+    "role": "Role",
+    "billingPlan": "Billing Plan",
+    "accountStatus": "Account Status",
+    "saving": "Saving...",
+    "actions": {
+      "createTitular": "Create lifetime titular",
+      "last30": "last 30 days",
+      "familyHealth": "Family health",
+      "atRisk": "Families at risk",
+      "needingSupport": "Waiting for support",
+      "privileges": "Privileges and limits",
+      "helpText": "Grant lifetime plans, adjust custom limits, and disconnect any member without affecting lists.",
+      "auditLog": "Open audit"
+    }
+  }
+}

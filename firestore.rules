@@ -2,8 +2,138 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function currentUid() {
+      return request.auth.uid;
+    }
+
+    function userDocExists() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(currentUid()));
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(currentUid()));
+    }
+
+    function hasRole(role) {
+      return userDocExists() && userDoc().data.role == role;
+    }
+
+    function isMaster() {
+      return userDocExists() && (
+        userDoc().data.role == "master" ||
+        (userDoc().data.props != null && userDoc().data.props.isMaster == true)
+      );
+    }
+
+    function isTitular() {
+      return hasRole("titular") || isMaster();
+    }
+
+    function isSelf(userId) {
+      return signedIn() && currentUid() == userId;
+    }
+
+    function familyExists(familyId) {
+      return exists(/databases/$(database)/documents/families/$(familyId));
+    }
+
+    function familyData(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId)).data;
+    }
+
+    function isFamilyOwner(familyId) {
+      return signedIn()
+        && familyExists(familyId)
+        && familyData(familyId).ownerId == currentUid();
+    }
+
+    function isFamilyMember(familyId) {
+      return signedIn()
+        && familyExists(familyId)
+        && familyData(familyId).members[currentUid()] != null
+        && (
+          !('status' in familyData(familyId).members[currentUid()])
+          || familyData(familyId).members[currentUid()].status == "active"
+        );
+    }
+
+    function listHasCollaborator(listData) {
+      return signedIn()
+        && listData.collaborators != null
+        && listData.collaborators.hasAny([currentUid()]);
+    }
+
+    match /users/{userId} {
+      allow create: if signedIn() && isSelf(userId);
+      allow read: if signedIn() && (isSelf(userId) || isMaster());
+      // Permite update se:
+      // 1. É você mesmo E não está mudando role/status (proteção básica)
+      // 2. OU é Master (pode mudar tudo)
+      allow update: if isMaster() || (
+        signedIn() 
+        && isSelf(userId)
+        // Se o campo 'role' existe no update, deve ser igual ao existente
+        && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
+        // Se o campo 'status' existe no update, deve ser igual ao existente
+        && (!('status' in request.resource.data) || request.resource.data.status == resource.data.status)
+      );
+      allow delete: if false;
+    }
+
+    match /families/{familyId} {
+      allow create: if signedIn()
+        && request.resource.data.ownerId == currentUid()
+        && isTitular();
+      allow read: if isMaster() || isFamilyOwner(familyId) || isFamilyMember(familyId);
+      allow update: if isMaster() || (isFamilyOwner(familyId) && request.resource.data.ownerId == currentUid());
+      allow delete: if isMaster() || isFamilyOwner(familyId);
+
+      match /lists/{listId} {
+        allow create: if isMaster()
+          || (
+            isTitular()
+            && request.resource.data.ownerId == currentUid()
+            && isFamilyOwner(familyId)
+          );
+        allow read: if isMaster() || isFamilyOwner(familyId) || listHasCollaborator(resource.data);
+        allow update: if isMaster() || (isFamilyOwner(familyId) && resource.data.ownerId == currentUid());
+        allow delete: if isMaster() || (isFamilyOwner(familyId) && resource.data.ownerId == currentUid());
+
+        match /items/{itemId} {
+          allow read: if isMaster()
+            || isFamilyOwner(familyId)
+            || listHasCollaborator(get(/databases/$(database)/documents/families/$(familyId)/lists/$(listId)).data);
+          allow create, update, delete: if isMaster() || isFamilyOwner(familyId);
+        }
+      }
+
+      match /invites/{inviteId} {
+        allow read: if isMaster() || isFamilyOwner(familyId);
+        allow create, update, delete: if isMaster() || isFamilyOwner(familyId);
+      }
+    }
+
+    // Plans - apenas Master pode editar, todos autenticados podem ler
+    match /plans/{planId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isMaster();
+    }
+
+    // Configurações globais - apenas Master
+    match /settings/{settingId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isMaster();
+    }
+
+    // Logs de auditoria - apenas Master pode ver
+    match /audit_logs/{logId} {
+      allow read: if isMaster();
+      allow create: if signedIn();
+      allow update, delete: if false;
     }
   }
 }
