@@ -100,6 +100,18 @@ export class SubscriptionPlan {
     return this.props.limits;
   }
 
+  get monthlyPrice() {
+    return this.props.monthlyPrice;
+  }
+
+  get yearlyPrice() {
+    return this.props.yearlyPrice;
+  }
+
+  get currency() {
+    return this.props.currency;
+  }
+
   seatsRemaining(snapshot?: BillingSnapshot) {
     if (!snapshot) return this.limits.familyMembers;
     if (!Number.isFinite(snapshot.invites.total)) return Number.POSITIVE_INFINITY;
