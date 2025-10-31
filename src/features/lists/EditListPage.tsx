@@ -18,6 +18,7 @@ export function EditListPage() {
     const [form, setForm] = useState({
         name: "",
         description: "",
+        type: "shopping" as "shopping" | "tasks",
     });
 
     const primaryFamilyId = domainUser?.props.primaryFamilyId;
@@ -32,6 +33,7 @@ export function EditListPage() {
                     setForm({
                         name: list.name,
                         description: list.description || "",
+                        type: list.type || "shopping",
                     });
                 }
             } catch (error) {
@@ -52,6 +54,7 @@ export function EditListPage() {
         try {
             const updateData: any = {
                 name: form.name.trim(),
+                type: form.type,
             };
 
             if (form.description.trim()) {
@@ -111,6 +114,36 @@ export function EditListPage() {
                             className="w-full rounded-xl border border-soft bg-surface-alt px-4 py-3 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/40"
                             required
                         />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label htmlFor="type" className="block text-sm font-medium text-secondary">
+                            {t("lists.type", { defaultValue: "Tipo de lista" })} *
+                        </label>
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setForm({ ...form, type: "shopping" })}
+                                className={`flex-1 rounded-xl border-2 p-4 text-left transition ${form.type === "shopping"
+                                        ? "border-brand bg-brand-soft text-brand"
+                                        : "border-soft bg-surface-alt text-secondary hover:border-brand/40"
+                                    }`}
+                            >
+                                <div className="text-sm font-semibold">🛒 {t("lists.typeShopping", { defaultValue: "Compras" })}</div>
+                                <div className="mt-1 text-xs opacity-80">{t("lists.typeShoppingHint", { defaultValue: "Itens para comprar" })}</div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setForm({ ...form, type: "tasks" })}
+                                className={`flex-1 rounded-xl border-2 p-4 text-left transition ${form.type === "tasks"
+                                        ? "border-brand bg-brand-soft text-brand"
+                                        : "border-soft bg-surface-alt text-secondary hover:border-brand/40"
+                                    }`}
+                            >
+                                <div className="text-sm font-semibold">✓ {t("lists.typeTasks", { defaultValue: "Tarefas" })}</div>
+                                <div className="mt-1 text-xs opacity-80">{t("lists.typeTasksHint", { defaultValue: "Coisas a fazer" })}</div>
+                            </button>
+                        </div>
                     </div>
 
                     <div className="space-y-2">

@@ -8,7 +8,7 @@ import { Button } from "../../components/ui/Button";
 import { useAuth } from "../auth/useAuth";
 import { useFamilyLists } from "../../hooks/useLists";
 import { usePermissions } from "../../hooks/usePermissions";
-import { ListCard } from "./components/ListCard";
+import { ListCardWithData } from "./components/ListCardWithData";
 
 export function ListsPage() {
   const { domainUser } = useAuth();
@@ -117,7 +117,7 @@ export function ListsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredLists.map((list) => (
-            <ListCard key={list.id} list={list} />
+            <ListCardWithData key={list.id} list={list} />
           ))}
         </div>
       )}

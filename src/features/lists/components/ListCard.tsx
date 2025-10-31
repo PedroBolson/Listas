@@ -47,7 +47,12 @@ export function ListCard({ list, itemsCount = 0, completedCount = 0 }: ListCardP
                   </div>
                   <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                     <CheckCircle2 className="size-4" />
-                    <span>{completedCount} {t("lists.completed", { defaultValue: "concluídos" })}</span>
+                    <span>
+                      {completedCount} {list.type === "shopping"
+                        ? t("lists.purchased", { defaultValue: "comprados" }).toLowerCase()
+                        : t("lists.completed", { defaultValue: "concluídos" }).toLowerCase()
+                      }
+                    </span>
                   </div>
                 </div>
 

@@ -155,6 +155,17 @@ export function ListDetailPage() {
                             <span>
                                 {items.length} {t("lists.itemsCount", { defaultValue: "itens" })}
                             </span>
+                            {items.length > 0 && (
+                                <>
+                                    <span>•</span>
+                                    <span>
+                                        {checkedItems.length} {list.type === "shopping"
+                                            ? t("lists.purchased", { defaultValue: "comprados" })
+                                            : t("lists.completed", { defaultValue: "concluídos" })
+                                        }
+                                    </span>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -273,7 +284,7 @@ export function ListDetailPage() {
                                     >
                                         <button
                                             onClick={() => handleToggleItem(item.id, item.checked)}
-                                            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 border-soft transition hover:border-brand hover:bg-brand-soft"
+                                            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 border-muted/40 transition hover:border-brand hover:bg-brand-soft"
                                         />
                                         <div className="flex-1 space-y-1">
                                             <div className="flex items-start justify-between gap-2">
@@ -300,7 +311,7 @@ export function ListDetailPage() {
                                                 <p className="text-xs text-muted">{item.notes}</p>
                                             )}
                                             <p className="text-xs text-muted">
-                                                {t("lists.createdBy", { defaultValue: "Criado por" })}{" "}
+                                                {t("lists.addedBy", { defaultValue: "Adicionado por" })}{" "}
                                                 <span className="font-medium">{userNames[item.createdBy] || "..."}</span>
                                             </p>
                                         </div>
@@ -313,7 +324,10 @@ export function ListDetailPage() {
                     {checkedItems.length > 0 && (
                         <Card padding="lg" elevated>
                             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
-                                {t("lists.completed", { defaultValue: "Concluídos" })} ({checkedItems.length})
+                                {list.type === "shopping"
+                                    ? t("lists.purchased", { defaultValue: "Comprados" })
+                                    : t("lists.completed", { defaultValue: "Concluídos" })
+                                } ({checkedItems.length})
                             </h3>
                             <div className="space-y-2">
                                 {checkedItems.map((item) => (
@@ -323,7 +337,7 @@ export function ListDetailPage() {
                                     >
                                         <button
                                             onClick={() => handleToggleItem(item.id, item.checked)}
-                                            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 border-success bg-success text-white transition"
+                                            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 border-success/80 bg-success text-white transition hover:bg-success/90"
                                         >
                                             <Check className="h-4 w-4" />
                                         </button>
@@ -353,12 +367,15 @@ export function ListDetailPage() {
                                             )}
                                             <div className="text-xs text-muted">
                                                 <p>
-                                                    {t("lists.createdBy", { defaultValue: "Criado por" })}{" "}
+                                                    {t("lists.addedBy", { defaultValue: "Adicionado por" })}{" "}
                                                     <span className="font-medium">{userNames[item.createdBy] || "..."}</span>
                                                 </p>
                                                 {item.checkedBy && item.checkedAt && (
                                                     <p>
-                                                        {t("lists.completedBy", { defaultValue: "Concluído por" })}{" "}
+                                                        {list.type === "shopping"
+                                                            ? t("lists.purchasedBy", { defaultValue: "Comprado por" })
+                                                            : t("lists.completedBy", { defaultValue: "Concluído por" })
+                                                        }{" "}
                                                         <span className="font-medium">{userNames[item.checkedBy] || "..."}</span>
                                                         {" • "}
                                                         {new Date(item.checkedAt).toLocaleDateString("pt-BR", {

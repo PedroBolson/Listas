@@ -96,3 +96,32 @@ export function useListItems(familyId: string | null, listId: string | null) {
 
     return { items, loading, error };
 }
+
+export function useListItemsCount(familyId: string | null, listId: string) {
+    const [itemsCount, setItemsCount] = useState(0);
+    const [completedCount, setCompletedCount] = useState(0);
+
+    useEffect(() => {
+        if (!familyId) {
+            setItemsCount(0);
+            setCompletedCount(0);
+            return;
+        }
+
+        const unsubscribe = subscribeToListItems(
+            familyId,
+            listId,
+            (data) => {
+                setItemsCount(data.length);
+                setCompletedCount(data.filter(item => item.checked).length);
+            },
+            (err) => {
+                console.error("Error loading items count:", err);
+            }
+        );
+
+        return () => unsubscribe();
+    }, [familyId, listId]);
+
+    return { itemsCount, completedCount };
+}

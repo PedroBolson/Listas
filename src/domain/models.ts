@@ -136,6 +136,7 @@ export class SubscriptionPlan {
 }
 
 export type ListVisibility = "private" | "shared" | "public";
+export type ListType = "shopping" | "tasks";
 
 export interface ListItemRecord {
   id: string;
@@ -162,6 +163,7 @@ export interface ListRecord {
   ownerId: string;
   name: string;
   description?: string;
+  type?: ListType;
   visibility: ListVisibility;
   tags: string[];
   permissions: PermissionRule[];
@@ -185,7 +187,7 @@ export interface FamilyRecord {
 
 export interface FamilyMemberProfile {
   userId: string;
-  role: "owner" | "collaborator" | "viewer";
+  role: "owner" | "titular" | "collaborator" | "viewer"; // "titular" é valor legado, deve ser migrado para "owner"
   status: "active" | "removed" | "pending";
   joinedAt: string;
   removedAt?: string;

@@ -16,6 +16,7 @@ export function CreateListPage() {
     const [form, setForm] = useState({
         name: "",
         description: "",
+        type: "shopping" as "shopping" | "tasks",
     });
 
     const primaryFamilyId = domainUser?.props.primaryFamilyId;
@@ -28,6 +29,7 @@ export function CreateListPage() {
         try {
             const listData: any = {
                 name: form.name.trim(),
+                type: form.type,
                 familyId: primaryFamilyId,
                 ownerId: domainUser.id,
                 visibility: "private",
@@ -90,6 +92,36 @@ export function CreateListPage() {
                     </div>
 
                     <div className="space-y-2">
+                        <label htmlFor="type" className="block text-sm font-medium text-secondary">
+                            {t("lists.type", { defaultValue: "Tipo de lista" })} *
+                        </label>
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setForm({ ...form, type: "shopping" })}
+                                className={`flex-1 rounded-xl border-2 p-4 text-left transition ${form.type === "shopping"
+                                        ? "border-brand bg-brand-soft text-brand"
+                                        : "border-soft bg-surface-alt text-secondary hover:border-brand/40"
+                                    }`}
+                            >
+                                <div className="text-sm font-semibold">🛒 {t("lists.typeShopping", { defaultValue: "Compras" })}</div>
+                                <div className="mt-1 text-xs opacity-80">{t("lists.typeShoppingHint", { defaultValue: "Itens para comprar" })}</div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setForm({ ...form, type: "tasks" })}
+                                className={`flex-1 rounded-xl border-2 p-4 text-left transition ${form.type === "tasks"
+                                        ? "border-brand bg-brand-soft text-brand"
+                                        : "border-soft bg-surface-alt text-secondary hover:border-brand/40"
+                                    }`}
+                            >
+                                <div className="text-sm font-semibold">✓ {t("lists.typeTasks", { defaultValue: "Tarefas" })}</div>
+                                <div className="mt-1 text-xs opacity-80">{t("lists.typeTasksHint", { defaultValue: "Coisas a fazer" })}</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
                         <label htmlFor="description" className="block text-sm font-medium text-secondary">
                             {t("lists.description", { defaultValue: "Descrição" })} ({t("common.optional", { defaultValue: "opcional" })})
                         </label>
@@ -104,32 +136,21 @@ export function CreateListPage() {
                         />
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex justify-end gap-3">
                         <Button
                             type="button"
                             variant="ghost"
                             onClick={() => navigate(-1)}
-                            className="flex-1"
                             disabled={saving}
                         >
                             {t("actions.cancel", { defaultValue: "Cancelar" })}
                         </Button>
                         <Button
                             type="submit"
-                            className="flex-1 gap-2"
                             disabled={!form.name.trim() || saving}
+                            icon={saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
                         >
-                            {saving ? (
-                                <>
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                    {t("actions.saving", { defaultValue: "Salvando..." })}
-                                </>
-                            ) : (
-                                <>
-                                    <Save className="h-5 w-5" />
-                                    {t("actions.create", { defaultValue: "Criar" })}
-                                </>
-                            )}
+                            {saving ? t("actions.saving", { defaultValue: "Salvando..." }) : t("actions.create", { defaultValue: "Criar" })}
                         </Button>
                     </div>
                 </form>

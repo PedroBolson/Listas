@@ -52,6 +52,16 @@ export function FamilyPage() {
     [members]
   );
 
+  const titular = useMemo(
+    () => activeMembers.find((m) => m.role === "owner" || m.role === "titular"),
+    [activeMembers]
+  );
+
+  const otherMembers = useMemo(
+    () => activeMembers.filter((m) => m.role !== "owner" && m.role !== "titular"),
+    [activeMembers]
+  );
+
   // Buscar detalhes dos membros
   useEffect(() => {
     if (!family) return;
@@ -190,70 +200,103 @@ export function FamilyPage() {
         </Card>
       </motion.div>
 
-      <motion.div variants={item} className="space-y-3">
-        <h2 className="text-lg font-semibold">
-          {t("family.members", { defaultValue: "Membros" })}
-        </h2>
-        <div className="space-y-2">
-          {activeMembers.map((member) => {
-            const isOwner = member.role === "owner";
-            const isCurrentUser = member.id === domainUser?.id;
-            const userDetails = memberDetails.get(member.id);
-
-            return (
-              <Card key={member.id} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar name={userDetails?.displayName || userDetails?.email || member.id || "User"} />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">
-                          {userDetails?.displayName || userDetails?.email || member.id?.slice(0, 8) || "Unknown"}
-                          {isCurrentUser && (
-                            <span className="ml-2 text-sm text-gray-500">
-                              ({t("family.you")})
-                            </span>
-                          )}
-                        </p>
-                        {isOwner && (
-                          <Crown className="size-4 text-yellow-500" />
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {userDetails?.email || (member.role === "owner" ? "Titular" : member.role === "collaborator" ? "Colaborador" : "Visualizador")}
-                      </p>
-                    </div>
+      {/* Titular */}
+      {titular && (
+        <motion.div variants={item} className="space-y-3">
+          <h2 className="text-lg font-semibold">
+            {t("family.titular", { defaultValue: "Titular" })}
+          </h2>
+          <Card className="border-2 border-yellow-500/20 bg-linear-to-br from-yellow-50 to-amber-50 p-4 dark:from-yellow-950/20 dark:to-amber-950/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Avatar name={memberDetails.get(titular.id)?.displayName || memberDetails.get(titular.id)?.email || titular.id || "User"} />
+                  <div className="absolute -right-1 -top-1 rounded-full bg-yellow-500 p-1">
+                    <Crown className="size-3 text-white" />
                   </div>
-
+                </div>
+                <div>
                   <div className="flex items-center gap-2">
-                    {isOwner && (
-                      <StatusPill tone="success">
-                        {t("family.titular", { defaultValue: "Titular" })}
-                      </StatusPill>
-                    )}
-                    {!isOwner && (
+                    <p className="font-semibold">
+                      {memberDetails.get(titular.id)?.displayName || memberDetails.get(titular.id)?.email || titular.id?.slice(0, 8) || "Unknown"}
+                      {titular.id === domainUser?.id && (
+                        <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-400">
+                          ({t("family.you", { defaultValue: "você" })})
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {memberDetails.get(titular.id)?.email || "Titular da família"}
+                  </p>
+                </div>
+              </div>
+
+              <StatusPill tone="success">
+                <Crown className="mr-1 size-3" />
+                {t("family.titular", { defaultValue: "Titular" })}
+              </StatusPill>
+            </div>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Outros Membros */}
+      {otherMembers.length > 0 && (
+        <motion.div variants={item} className="space-y-3">
+          <h2 className="text-lg font-semibold">
+            {t("family.otherMembers", { defaultValue: "Outros Membros" })} ({otherMembers.length})
+          </h2>
+          <div className="space-y-2">
+            {otherMembers.map((member) => {
+              const isCurrentUser = member.id === domainUser?.id;
+              const userDetails = memberDetails.get(member.id);
+
+              return (
+                <Card key={member.id} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={userDetails?.displayName || userDetails?.email || member.id || "User"} />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">
+                            {userDetails?.displayName || userDetails?.email || member.id?.slice(0, 8) || "Unknown"}
+                            {isCurrentUser && (
+                              <span className="ml-2 text-sm text-gray-500">
+                                ({t("family.you", { defaultValue: "você" })})
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {userDetails?.email || "Membro"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <StatusPill tone="info">
                         {t("family.member", { defaultValue: "Membro" })}
                       </StatusPill>
-                    )}
 
-                    {canManage && !isCurrentUser && !isOwner && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveMember(member.id)}
-                        disabled={removing === member.id}
-                      >
-                        <UserMinus className="size-4 text-red-500" />
-                      </Button>
-                    )}
+                      {canManage && !isCurrentUser && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveMember(member.id)}
+                          disabled={removing === member.id}
+                        >
+                          <UserMinus className="size-4 text-red-500" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      </motion.div>
+                </Card>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 }
