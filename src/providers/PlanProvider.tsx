@@ -80,7 +80,7 @@ export function PlanProvider({ children }: PlanProviderProps) {
           const orderB = (b.props as any).order ?? 999;
           return orderA - orderB;
         });
-        
+
         setPlans(sorted);
         setLoading(false);
         setError(null);
