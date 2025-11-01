@@ -1,0 +1,24 @@
+{
+    "name": "ListsHub",
+    "short_name": "ListsHub",
+    "description": "Organize tudo, compartilhe com quem importa e mantenha o controle do negócio.",
+    "theme_color": "#6366F1",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "scope": "/",
+    "start_url": "/",
+    "icons": [
+        {
+            "src": "/images/wired-outline-56-document-hover-swipe.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/images/wired-outline-56-document-hover-swipe.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}
