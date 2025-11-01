@@ -70,6 +70,10 @@
   }
 }
 
+button {
+  cursor: pointer;
+}
+
 @layer utilities {
   .bg-background {
     background-color: var(--color-bg);
@@ -133,21 +137,17 @@
   }
 
   .glass-panel {
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.72),
-      rgba(255, 255, 255, 0.46)
-    );
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.72),
+        rgba(255, 255, 255, 0.46));
     border: 1px solid rgba(255, 255, 255, 0.38);
     backdrop-filter: blur(22px);
   }
 
   .dark .glass-panel {
-    background: linear-gradient(
-      135deg,
-      rgba(17, 20, 36, 0.78),
-      rgba(12, 15, 28, 0.58)
-    );
+    background: linear-gradient(135deg,
+        rgba(17, 20, 36, 0.78),
+        rgba(12, 15, 28, 0.58));
     border: 1px solid rgba(99, 102, 241, 0.22);
   }
 }

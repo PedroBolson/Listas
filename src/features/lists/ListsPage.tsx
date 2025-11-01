@@ -38,16 +38,16 @@ export function ListsPage() {
 
   return (
     <motion.div
-      className="mx-auto max-w-6xl space-y-6 p-6"
+      className="mx-auto flex w-full max-w-md flex-col gap-6 p-4 sm:max-w-3xl sm:p-6 lg:max-w-6xl"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex flex-col gap-4 text-center sm:text-left sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
           <h1 className="text-3xl font-bold text-primary">
             {t("lists.title", { defaultValue: "Minhas Listas" })}
           </h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="text-sm text-muted">
             {t("lists.subtitle", { defaultValue: "Gerencie suas listas e itens" })}
           </p>
         </div>
@@ -55,13 +55,14 @@ export function ListsPage() {
           <Button
             onClick={handleCreateList}
             icon={<Plus className="h-5 w-5" />}
+            className="self-center sm:self-auto"
           >
             {t("actions.createList", { defaultValue: "Criar lista" })}
           </Button>
         )}
       </div>
 
-      <Card padding="lg" elevated>
+      <Card padding="lg" elevated className="mx-auto w-full max-w-md sm:max-w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
@@ -81,9 +82,9 @@ export function ListsPage() {
       </Card>
 
       {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 place-items-center sm:grid-cols-2 sm:place-items-stretch lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} padding="lg" elevated>
+            <Card key={i} padding="lg" elevated className="w-full max-w-md">
               <div className="animate-pulse space-y-3">
                 <div className="h-6 w-3/4 rounded bg-surface-alt" />
                 <div className="h-4 w-full rounded bg-surface-alt" />
@@ -93,7 +94,7 @@ export function ListsPage() {
           ))}
         </div>
       ) : filteredLists.length === 0 ? (
-        <Card padding="lg" elevated>
+        <Card padding="lg" elevated className="mx-auto w-full max-w-md sm:max-w-full">
           <div className="py-12 text-center">
             <ClipboardList className="mx-auto h-16 w-16 text-muted" />
             <h3 className="mt-4 text-lg font-semibold text-primary">
@@ -115,9 +116,11 @@ export function ListsPage() {
           </div>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 place-items-center sm:grid-cols-2 sm:place-items-stretch lg:grid-cols-3">
           {filteredLists.map((list) => (
-            <ListCardWithData key={list.id} list={list} />
+            <div key={list.id} className="w-full max-w-md sm:max-w-none sm:w-full">
+              <ListCardWithData list={list} />
+            </div>
           ))}
         </div>
       )}
