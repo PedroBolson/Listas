@@ -6,13 +6,14 @@ interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
   alt?: string;
   name?: string;
   fallback?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 const sizes = {
   sm: "h-8 w-8 text-xs",
   md: "h-10 w-10 text-sm",
   lg: "h-14 w-14 text-base",
+  xl: "h-24 w-24 text-2xl",
 } as const;
 
 function getInitials(name: string): string {

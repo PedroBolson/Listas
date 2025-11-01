@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
+import { Avatar } from "../../components/ui/Avatar";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { useAuth } from "../auth/useAuth";
 import { useList, useListItems } from "../../hooks/useLists";
@@ -23,6 +24,7 @@ export function ListDetailPage() {
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [adding, setAdding] = useState(false);
     const [userNames, setUserNames] = useState<Record<string, string>>({});
+    const [userAvatars, setUserAvatars] = useState<Record<string, string | null>>({});
     const [searchQuery, setSearchQuery] = useState("");
     const [showSearch, setShowSearch] = useState(false);
     const [confirmDialog, setConfirmDialog] = useState<{
@@ -49,7 +51,7 @@ export function ListDetailPage() {
     const isCollaborator = list?.collaborators.includes(domainUser?.id ?? '');
     const canEdit = isOwner || isCollaborator || domainUser?.isMaster;
 
-    // Fetch user names for items
+    // Fetch user names and avatars for items
     useEffect(() => {
         const userIds = new Set<string>();
         items.forEach((item) => {
@@ -57,20 +59,23 @@ export function ListDetailPage() {
             if (item.checkedBy) userIds.add(item.checkedBy);
         });
 
-        const fetchNames = async () => {
+        const fetchUserData = async () => {
             const names: Record<string, string> = {};
+            const avatars: Record<string, string | null> = {};
             for (const userId of userIds) {
                 if (!userNames[userId]) {
                     const user = await getUserById(userId);
                     names[userId] = user?.displayName || user?.email || "Usuário";
+                    avatars[userId] = user?.photoURL || null;
                 }
             }
             if (Object.keys(names).length > 0) {
                 setUserNames((prev) => ({ ...prev, ...names }));
+                setUserAvatars((prev) => ({ ...prev, ...avatars }));
             }
         };
 
-        fetchNames();
+        fetchUserData();
     }, [items]);
 
     const handleAddItem = async () => {
@@ -528,10 +533,17 @@ export function ListDetailPage() {
                                             {item.notes && (
                                                 <p className="text-xs text-muted">{item.notes}</p>
                                             )}
-                                            <p className="text-xs text-muted">
-                                                {t("lists.addedBy", { defaultValue: "Adicionado por" })}{" "}
-                                                <span className="font-medium">{userNames[item.createdBy] || "..."}</span>
-                                            </p>
+                                            <div className="flex items-center gap-2 text-xs text-muted">
+                                                <Avatar
+                                                    src={userAvatars[item.createdBy]}
+                                                    fallback={userNames[item.createdBy]?.[0] || "?"}
+                                                    size="sm"
+                                                />
+                                                <span>
+                                                    {t("lists.addedBy", { defaultValue: "Adicionado por" })}{" "}
+                                                    <span className="font-medium">{userNames[item.createdBy] || "..."}</span>
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -583,26 +595,40 @@ export function ListDetailPage() {
                                             {item.notes && (
                                                 <p className="text-xs text-muted line-through">{item.notes}</p>
                                             )}
-                                            <div className="text-xs text-muted">
-                                                <p>
-                                                    {t("lists.addedBy", { defaultValue: "Adicionado por" })}{" "}
-                                                    <span className="font-medium">{userNames[item.createdBy] || "..."}</span>
-                                                </p>
+                                            <div className="flex flex-col gap-1 text-xs text-muted">
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar
+                                                        src={userAvatars[item.createdBy]}
+                                                        fallback={userNames[item.createdBy]?.[0] || "?"}
+                                                        size="sm"
+                                                    />
+                                                    <span>
+                                                        {t("lists.addedBy", { defaultValue: "Adicionado por" })}{" "}
+                                                        <span className="font-medium">{userNames[item.createdBy] || "..."}</span>
+                                                    </span>
+                                                </div>
                                                 {item.checkedBy && item.checkedAt && (
-                                                    <p>
-                                                        {list.type === "shopping"
-                                                            ? t("lists.purchasedBy", { defaultValue: "Comprado por" })
-                                                            : t("lists.completedBy", { defaultValue: "Concluído por" })
-                                                        }{" "}
-                                                        <span className="font-medium">{userNames[item.checkedBy] || "..."}</span>
-                                                        {" • "}
-                                                        {new Date(item.checkedAt).toLocaleDateString("pt-BR", {
-                                                            day: "2-digit",
-                                                            month: "short",
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                        })}
-                                                    </p>
+                                                    <div className="flex items-center gap-2">
+                                                        <Avatar
+                                                            src={userAvatars[item.checkedBy]}
+                                                            fallback={userNames[item.checkedBy]?.[0] || "?"}
+                                                            size="sm"
+                                                        />
+                                                        <span>
+                                                            {list.type === "shopping"
+                                                                ? t("lists.purchasedBy", { defaultValue: "Comprado por" })
+                                                                : t("lists.completedBy", { defaultValue: "Concluído por" })
+                                                            }{" "}
+                                                            <span className="font-medium">{userNames[item.checkedBy] || "..."}</span>
+                                                            {" • "}
+                                                            {new Date(item.checkedAt).toLocaleDateString("pt-BR", {
+                                                                day: "2-digit",
+                                                                month: "short",
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                            })}
+                                                        </span>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>

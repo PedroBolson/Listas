@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/a
 import { browserLocalPersistence, getAuth, setPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
+import { getStorage } from "firebase/storage";
 
 interface FirebaseConfig {
   apiKey: string | undefined;
@@ -58,7 +59,8 @@ const app = getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 const functions = getFunctions(app);
+const storage = getStorage(app);
 
 setPersistence(auth, browserLocalPersistence).catch(() => undefined);
 
-export { app, auth, db, functions };
+export { app, auth, db, functions, storage };
