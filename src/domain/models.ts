@@ -242,7 +242,25 @@ export class DomainUser {
   }
 
   get activeFamilies() {
-    return this.props.families.filter((family) => !family.removedAt);
+    const familiesFromArray = this.props.families.filter((family) => !family.removedAt);
+
+    // Se tem primaryFamilyId (titular), adiciona ao array se não estiver lá
+    if (this.props.primaryFamilyId) {
+      const hasInArray = familiesFromArray.some(f => f.familyId === this.props.primaryFamilyId);
+      if (!hasInArray) {
+        // Adiciona a família primária no início
+        return [
+          {
+            familyId: this.props.primaryFamilyId,
+            lists: [],
+            joinedAt: new Date().toISOString()
+          },
+          ...familiesFromArray
+        ];
+      }
+    }
+
+    return familiesFromArray;
   }
 
   get isActive() {
@@ -275,7 +293,10 @@ export class DomainUser {
 
   get managedFamilyId() {
     if (this.isMaster) return undefined;
-    return this.props.primaryFamilyId ?? this.props.families.find((family) => family.invitedBy === this.id)?.familyId;
+    if (this.props.primaryFamilyId) return this.props.primaryFamilyId;
+
+    const activeFamily = this.props.families.find((family) => !family.removedAt);
+    return activeFamily?.familyId;
   }
 
   belongsToFamily(familyId: string) {
@@ -308,6 +329,33 @@ export const COLLECTIONS = {
   INVITES: "invites",
   AUDIT: "auditLogs",
 } as const;
+
+export type InviteStatus = "pending" | "accepted" | "expired" | "revoked";
+export type InviteType = "link" | "code";
+
+export interface FamilyInviteRecord {
+  id: string;
+  familyId: string;
+  createdBy: string;
+  createdAt: string;
+  expiresAt: string;
+  status: InviteStatus;
+
+  // Token e código
+  token: string; // UUID único para o link
+  code: string; // Código de 6 dígitos (case-insensitive)
+
+  // Controle de uso
+  maxUses: number; // 1 = uso único, 999 = ilimitado
+  usedCount: number;
+
+  // Quem aceitou
+  acceptedBy: string[]; // Array de userIds
+
+  // Metadados
+  inviteType: InviteType;
+  familyName?: string; // Cache do nome da família
+}
 
 export const SUBCOLLECTIONS = {
   FAMILY_LISTS: (familyId: string) => `families/${familyId}/lists`,

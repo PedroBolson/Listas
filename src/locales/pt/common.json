@@ -3,6 +3,11 @@
     "name": "ListsHub",
     "tagline": "Organize tudo, compartilhe com quem importa e mantenha o controle do negócio."
   },
+  "common": {
+    "or": "ou",
+    "back": "Voltar",
+    "loading": "Carregando..."
+  },
   "actions": {
     "signIn": "Entrar com Google",
     "signOut": "Sair",
@@ -27,6 +32,10 @@
     "showAdvanced": "Adicionar notas/quantidade",
     "hideAdvanced": "Ocultar opções",
     "backToLists": "Voltar para listas"
+  },
+  "settings": {
+    "theme": "Tema",
+    "language": "Idioma"
   },
   "navigation": {
     "dashboard": "Painel",
@@ -163,6 +172,10 @@
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Bem-vindo de volta, {{name}}",
+    "memberTitle": "Minhas Listas",
+    "memberSubtitle": "{{familyName}}",
+    "sharedLists": "Listas Compartilhadas",
+    "sharedListsHint": "Listas que foram compartilhadas com você",
     "welcomeMaster": "Central de controle master",
     "welcomeTitular": "Olá {{name}}, vamos organizar a família hoje?",
     "welcomeMember": "Bem-vindo! Estas são as listas que compartilharam com você.",
@@ -175,6 +188,12 @@
     "stats": {
       "lists": "Listas",
       "listsDescription": "{{count}} famílias ativas",
+      "sharedLists": "Listas compartilhadas",
+      "sharedListsDescription": "Listas que você pode acessar",
+      "totalItems": "Total de Itens",
+      "totalItemsDescription": "Em todas as suas listas",
+      "familyMembers": "Membros da Família",
+      "familyMembersDescription": "Pessoas na família",
       "members": "Membros",
       "membersDescription": "Controle de acesso para convidados",
       "items": "Itens",
@@ -186,6 +205,11 @@
       "uptimeDescription": "Atualizado em tempo real",
       "activityLabel": "Atividade",
       "activityDescription": "Eventos recentes sincronizados"
+    },
+    "upgradeCta": {
+      "title": "Crie sua própria família!",
+      "description": "Torne-se titular e tenha acesso ilimitado para criar listas, convidar membros e gerenciar sua própria família.",
+      "button": "Virar Titular"
     }
   },
   "lists": {
@@ -252,7 +276,17 @@
     "confirmDeleteCompleted": "Isso vai deletar permanentemente {{count}} {{type}}. Esta ação não pode ser desfeita.",
     "confirmDeleteAll": "Isso vai deletar permanentemente TODOS os {{count}} itens desta lista. Esta ação não pode ser desfeita.",
     "confirmDeleteListCascade": "⚠️ ATENÇÃO: Isso vai deletar a lista \"{{name}}\" e TODOS os seus {{count}} itens. Esta ação não pode ser desfeita!",
-    "deleteError": "Erro ao excluir"
+    "deleteError": "Erro ao excluir",
+    "share": {
+      "title": "Compartilhar lista",
+      "description": "Selecione os membros da família que podem acessar esta lista e defina suas permissões.",
+      "noMembers": "Não há outros membros na família",
+      "canCreate": "Pode adicionar itens",
+      "canToggle": "Pode marcar como comprado",
+      "canDelete": "Pode remover itens",
+      "saveError": "Erro ao salvar permissões",
+      "manageMembers": "Gerenciar membros"
+    }
   },
   "family": {
     "title": "Família e convidados",
@@ -266,12 +300,15 @@
     "noFamilyDescription": "Crie sua primeira família para começar a organizar e compartilhar listas com quem você quiser.",
     "selectFamily": "Selecionar família",
     "switchFamily": "Trocar de família",
+    "switchingFamily": "Trocando de família...",
     "inviteMember": "Convidar membro",
     "maxFamiliesReached": "Você atingiu o limite de {{max}} famílias. Faça upgrade para criar mais.",
     "totalMembers": "Total de Membros",
     "you": "você",
     "titular": "Titular",
     "member": "Membro",
+    "memberRole": "Membro",
+    "titularRole": "Titular",
     "otherMembers": "Outros Membros",
     "actions": {
       "detach": "Remover da família",
@@ -351,5 +388,91 @@
       "helpText": "Conceda planos vitalícios, ajuste limites personalizados e desconecte qualquer membro sem afetar as listas.",
       "auditLog": "Abrir auditoria"
     }
+  },
+  "invites": {
+    "inviteMember": "Convidar Membro",
+    "inviteToFamily": "Para: {{family}}",
+    "generate": "Gerar Convite",
+    "generateDescription": "Gere um link e código para convidar alguém para sua família. O convite é válido por 7 dias.",
+    "oneSlotAvailable": "1 vaga disponível no seu plano",
+    "multipleSlotsAvailable": "{{count}} vagas disponíveis no seu plano",
+    "inviteLink": "Link de Convite",
+    "linkDescription": "Compartilhe este link por WhatsApp, email ou SMS",
+    "inviteCode": "Código de Convite",
+    "codeDescription": "Quem já tem conta pode usar este código para participar",
+    "copied": "Copiado!",
+    "copyCode": "Copiar código",
+    "expiresIn": "Válido por {{days}} dias",
+    "singleUse": "Pode ser usado 1 vez",
+    "multipleUses": "Pode ser usado até {{count}} vezes",
+    "generateNew": "Gerar novo",
+    "createError": "Erro ao gerar convite",
+    "joinFamily": "Participar de uma família",
+    "enterCode": "Digite o código de 6 dígitos",
+    "validating": "Validando código...",
+    "joinedSuccess": "Você agora faz parte da família!",
+    "acceptError": "Código inválido ou expirado",
+    "codeHelp": "O código está no convite que você recebeu",
+    "orUseLink": "Você também pode clicar no link de convite",
+    "needLogin": "Você precisa estar logado para aceitar o convite",
+    "loadingInvite": "Carregando convite...",
+    "invalidTitle": "Convite Inválido",
+    "invalidMessage": "Este convite não existe ou já expirou.",
+    "goHome": "Ir para o início",
+    "youAreInvited": "Você foi convidado!",
+    "toJoinFamily": "Para participar de: {{family}}",
+    "createAccount": "Criar nova conta",
+    "alreadyHaveAccount": "Já tenho conta - Fazer login",
+    "acceptingInvite": "Aceitando convite...",
+    "successTitle": "Bem-vindo!",
+    "successMessage": "Você agora faz parte de: {{family}}",
+    "redirecting": "Redirecionando...",
+    "errorTitle": "Erro ao aceitar",
+    "tryAgain": "Tentar novamente",
+    "loginToJoin": "Entrar e participar",
+    "createAccountToJoin": "Criar conta e participar",
+    "toJoinFamilyGeneric": "Para participar da família",
+    "loginButton": "Entrar",
+    "createAccountButton": "Criar conta",
+    "switchToSignup": "Criar nova conta",
+    "switchToLogin": "Já tenho conta"
+  },
+  "upgrade": {
+    "title": "Torne-se Titular",
+    "subtitle": "Desbloqueie todos os recursos e crie sua própria família",
+    "benefits": {
+      "ownFamily": {
+        "title": "Família Própria",
+        "description": "Crie e gerencie sua própria família"
+      },
+      "unlimitedLists": {
+        "title": "Listas Ilimitadas",
+        "description": "Crie quantas listas precisar"
+      },
+      "inviteMembers": {
+        "title": "Convide Membros",
+        "description": "Adicione familiares e amigos"
+      },
+      "fullControl": {
+        "title": "Controle Total",
+        "description": "Gerencie permissões e acesso"
+      }
+    },
+    "plan": {
+      "free": {
+        "name": "Plano Gratuito",
+        "description": "Comece gratuitamente e gerencie sua família",
+        "features": {
+          "lists": "Até 10 listas",
+          "members": "Até 5 membros",
+          "items": "Até 50 itens por lista"
+        }
+      }
+    },
+    "button": {
+      "confirm": "Confirmar Upgrade",
+      "loading": "Processando..."
+    },
+    "disclaimer": "Você pode cancelar ou fazer upgrade a qualquer momento"
   }
 }

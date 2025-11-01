@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { subscribeToFamilyLists, subscribeToListItems, subscribeToList } from "../services/listService";
 import { type ListRecord, type ListItemRecord } from "../domain/models";
+import { useAuth } from "../features/auth/useAuth";
+import { useFamily } from "./useFamily";
 
 export function useFamilyLists(familyId: string | null) {
     const [lists, setLists] = useState<ListRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const { domainUser } = useAuth();
+    const { family } = useFamily(familyId);
 
     useEffect(() => {
         if (!familyId) {
@@ -18,7 +22,15 @@ export function useFamilyLists(familyId: string | null) {
         const unsubscribe = subscribeToFamilyLists(
             familyId,
             (data) => {
-                setLists(data);
+                let filteredLists = data;
+
+                if (domainUser?.isFamilyMemberOnly && family) {
+                    const memberProfile = family.members[domainUser.id];
+                    const allowedLists = memberProfile?.allowedLists || [];
+                    filteredLists = data.filter(list => allowedLists.includes(list.id));
+                }
+
+                setLists(filteredLists);
                 setLoading(false);
             },
             (err) => {
@@ -28,7 +40,7 @@ export function useFamilyLists(familyId: string | null) {
         );
 
         return () => unsubscribe();
-    }, [familyId]);
+    }, [familyId, domainUser, family]);
 
     return { lists, loading, error };
 }

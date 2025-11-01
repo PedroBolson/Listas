@@ -9,9 +9,9 @@ interface ListCardWithDataProps {
 
 export function ListCardWithData({ list }: ListCardWithDataProps) {
     const { domainUser } = useAuth();
-    const primaryFamilyId = domainUser?.props.primaryFamilyId ?? null;
+    const familyId = domainUser?.managedFamilyId ?? null;
 
-    const { itemsCount, completedCount } = useListItemsCount(primaryFamilyId, list.id);
+    const { itemsCount, completedCount } = useListItemsCount(familyId, list.id);
 
     return <ListCard list={list} itemsCount={itemsCount} completedCount={completedCount} />;
 }

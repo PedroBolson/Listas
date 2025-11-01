@@ -10,6 +10,7 @@ import { useAuth } from "../auth/useAuth";
 import { useList, useListItems } from "../../hooks/useLists";
 import { createListItem, toggleListItem, deleteListItem, deleteList } from "../../services/listService";
 import { getUserById } from "../../services/userService";
+import { ManageListMembersModal } from "../../components/lists/ManageListMembersModal";
 
 export function ListDetailPage() {
     const { listId } = useParams<{ listId: string }>();
@@ -37,10 +38,11 @@ export function ListDetailPage() {
         onConfirm: () => { },
     });
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showManageMembersModal, setShowManageMembersModal] = useState(false);
 
-    const primaryFamilyId = domainUser?.props.primaryFamilyId ?? null;
-    const { list, loading: listLoading } = useList(primaryFamilyId, listId ?? null);
-    const { items, loading: itemsLoading } = useListItems(primaryFamilyId, listId ?? null);
+    const familyId = domainUser?.managedFamilyId ?? null;
+    const { list, loading: listLoading } = useList(familyId, listId ?? null);
+    const { items, loading: itemsLoading } = useListItems(familyId, listId ?? null);
 
     const isOwner = list?.ownerId === domainUser?.id;
     const canEdit = isOwner || domainUser?.isMaster;
@@ -70,7 +72,7 @@ export function ListDetailPage() {
     }, [items]);
 
     const handleAddItem = async () => {
-        if (!newItemName.trim() || !primaryFamilyId || !listId || !domainUser) return;
+        if (!newItemName.trim() || !familyId || !listId || !domainUser) return;
 
         setAdding(true);
         try {
@@ -88,7 +90,7 @@ export function ListDetailPage() {
                 itemData.quantity = newItemQuantity;
             }
 
-            await createListItem(primaryFamilyId, listId, itemData);
+            await createListItem(familyId, listId, itemData);
             setNewItemName("");
             setNewItemNotes("");
             setNewItemQuantity(undefined);
@@ -101,20 +103,20 @@ export function ListDetailPage() {
     };
 
     const handleToggleItem = async (itemId: string, checked: boolean) => {
-        if (!primaryFamilyId || !listId || !domainUser) return;
+        if (!familyId || !listId || !domainUser) return;
         try {
-            await toggleListItem(primaryFamilyId, listId, itemId, !checked, domainUser.id);
+            await toggleListItem(familyId, listId, itemId, !checked, domainUser.id);
         } catch (error) {
             console.error("Erro ao marcar item:", error);
         }
     };
 
     const handleDeleteItem = async (itemId: string) => {
-        if (!canEdit || !primaryFamilyId || !listId) return;
+        if (!canEdit || !familyId || !listId) return;
         if (!confirm(t("lists.confirmDeleteItem", { defaultValue: "Excluir este item?" }))) return;
 
         try {
-            await deleteListItem(primaryFamilyId, listId, itemId);
+            await deleteListItem(familyId, listId, itemId);
         } catch (error) {
             console.error("Erro ao excluir item:", error);
         }
@@ -164,7 +166,7 @@ export function ListDetailPage() {
     }
 
     const handleDeleteCompletedItems = () => {
-        if (!primaryFamilyId || !listId) return;
+        if (!familyId || !listId) return;
 
         const itemType = list.type === "shopping"
             ? t("lists.purchased", { defaultValue: "itens comprados" })
@@ -183,7 +185,7 @@ export function ListDetailPage() {
                 setIsDeleting(true);
                 try {
                     await Promise.all(checkedItems.map(item =>
-                        deleteListItem(primaryFamilyId, listId, item.id)
+                        deleteListItem(familyId, listId, item.id)
                     ));
                 } catch (error) {
                     console.error("Erro ao excluir itens concluídos:", error);
@@ -197,7 +199,7 @@ export function ListDetailPage() {
     };
 
     const handleDeleteAllItems = () => {
-        if (!isOwner || !primaryFamilyId || !listId) return;
+        if (!isOwner || !familyId || !listId) return;
 
         setConfirmDialog({
             isOpen: true,
@@ -211,7 +213,7 @@ export function ListDetailPage() {
                 setIsDeleting(true);
                 try {
                     await Promise.all(items.map(item =>
-                        deleteListItem(primaryFamilyId, listId, item.id)
+                        deleteListItem(familyId, listId, item.id)
                     ));
                 } catch (error) {
                     console.error("Erro ao excluir todos os itens:", error);
@@ -225,7 +227,7 @@ export function ListDetailPage() {
     };
 
     const handleDeleteListCascade = () => {
-        if (!isOwner || !primaryFamilyId || !listId) return;
+        if (!isOwner || !familyId || !listId) return;
 
         setConfirmDialog({
             isOpen: true,
@@ -239,7 +241,7 @@ export function ListDetailPage() {
             onConfirm: async () => {
                 setIsDeleting(true);
                 try {
-                    await deleteList(primaryFamilyId, listId);
+                    await deleteList(familyId, listId);
                     navigate("/lists");
                 } catch (error) {
                     console.error("Erro ao excluir lista:", error);
@@ -257,7 +259,7 @@ export function ListDetailPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
         >
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-4">
                     <Button variant="ghost" onClick={() => navigate(-1)} className="mt-1">
                         <ArrowLeft className="h-5 w-5" />
@@ -267,7 +269,7 @@ export function ListDetailPage() {
                         {list.description && (
                             <p className="mt-2 text-sm text-muted">{list.description}</p>
                         )}
-                        <div className="mt-3 flex items-center gap-3 text-xs text-muted">
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
                             <span className="flex items-center gap-1">
                                 <Users className="h-4 w-4" />
                                 {list.collaborators?.length || 0} {t("general.members", { defaultValue: "membros" })}
@@ -291,14 +293,23 @@ export function ListDetailPage() {
                     </div>
                 </div>
                 {canEdit && (
-                    <div className="flex gap-2">
-                        <Button variant="ghost" onClick={() => navigate(`/lists/${listId}/share`)}>
+                    <div className="flex shrink-0 gap-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowManageMembersModal(true)}
+                            title={t("lists.share.manageMembers", { defaultValue: "Gerenciar membros" })}
+                        >
                             <Users className="h-5 w-5" />
                         </Button>
-                        <Button variant="ghost" onClick={() => navigate(`/lists/${listId}/edit`)}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/lists/${listId}/edit`)}
+                        >
                             <Edit className="h-5 w-5" />
                         </Button>
-                        <Button variant="ghost">
+                        <Button variant="ghost" size="sm">
                             <MoreVertical className="h-5 w-5" />
                         </Button>
                     </div>
@@ -394,17 +405,17 @@ export function ListDetailPage() {
                 <div className="space-y-4">
                     {/* Barra de ações - sempre visível quando há itens */}
                     <Card padding="md" elevated>
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <h3 className="text-sm font-semibold text-muted">
                                 {t("lists.actions", { defaultValue: "Ações" })}
                             </h3>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 {/* Busca - disponível para todos */}
                                 <motion.div
                                     initial={false}
-                                    animate={{ width: showSearch ? "auto" : "40px" }}
-                                    className="flex items-center gap-2 overflow-hidden"
+                                    animate={{ width: showSearch ? "100%" : "auto" }}
+                                    className="flex items-center gap-2 overflow-hidden sm:w-auto"
                                 >
                                     <Button
                                         variant="ghost"
@@ -421,13 +432,13 @@ export function ListDetailPage() {
                                         {showSearch && (
                                             <motion.input
                                                 initial={{ opacity: 0, width: 0 }}
-                                                animate={{ opacity: 1, width: "160px" }}
+                                                animate={{ opacity: 1, width: "auto" }}
                                                 exit={{ opacity: 0, width: 0 }}
                                                 type="text"
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                 placeholder={t("lists.searchPlaceholder", { defaultValue: "Buscar..." })}
-                                                className="rounded-lg border border-soft bg-surface px-3 py-1.5 text-sm outline-none transition focus:border-brand"
+                                                className="flex-1 rounded-lg border border-soft bg-surface px-3 py-1.5 text-sm outline-none transition focus:border-brand sm:w-40"
                                             />
                                         )}
                                     </AnimatePresence>
@@ -612,6 +623,19 @@ export function ListDetailPage() {
                 cancelText={t("actions.cancel", { defaultValue: "Cancelar" })}
                 loading={isDeleting}
             />
+
+            {/* Manage Members Modal */}
+            {list && (
+                <ManageListMembersModal
+                    list={list}
+                    isOpen={showManageMembersModal}
+                    onClose={() => setShowManageMembersModal(false)}
+                    onSuccess={() => {
+                        // Lista será atualizada automaticamente pelo subscription
+                        setShowManageMembersModal(false);
+                    }}
+                />
+            )}
         </motion.div>
     );
 }

@@ -10,8 +10,10 @@ import { ListDetailPage } from "../features/lists/ListDetailPage";
 import { FamilyPage } from "../features/family/FamilyPage";
 import { BillingPage } from "../features/billing/BillingPage";
 import { MasterConsolePage } from "../features/master/MasterConsolePage";
+import { UpgradePage } from "../features/upgrade/UpgradePage";
 import { AuthGate } from "../features/auth/AuthGate";
 import { PlanSelectionPage } from "../features/onboarding/PlanSelectionPage";
+import { InviteAcceptPage } from "../features/invites/InviteAcceptPage";
 
 function AppLayout() {
   const location = useLocation();
@@ -34,6 +36,10 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
+        element: <DashboardPage />,
+      },
+      {
+        path: "dashboard",
         element: <DashboardPage />,
       },
       {
@@ -68,7 +74,15 @@ const router = createBrowserRouter([
         path: "master",
         element: <MasterConsolePage />,
       },
+      {
+        path: "upgrade",
+        element: <UpgradePage />,
+      },
     ],
+  },
+  {
+    path: "/invite/:token",
+    element: <InviteAcceptPage />,
   },
   {
     path: "/onboarding/plan",

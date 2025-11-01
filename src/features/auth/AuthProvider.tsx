@@ -29,34 +29,38 @@ async function bootstrapDomainUser(user: User, overrides?: Partial<DomainUserPro
 
   const existing = snapshot.exists() ? (snapshot.data() as DomainUserProps) : undefined;
 
+  // 🔥 SE JÁ EXISTE, apenas retorna sem sobrescrever!
+  if (existing) {
+    return existing;
+  }
+
   // Monta o objeto base SEM campos undefined
   const userData: any = {
     id: user.uid,
-    email: overrides?.email ?? user.email ?? existing?.email ?? "",
-    displayName: overrides?.displayName ?? user.displayName ?? existing?.displayName ?? "",
-    photoURL: overrides?.photoURL ?? user.photoURL ?? existing?.photoURL ?? null,
-    locale: overrides?.locale ?? existing?.locale ?? "pt",
-    role: overrides?.role ?? existing?.role ?? USER_ROLE.TITULAR,
-    status: overrides?.status ?? existing?.status ?? "active",
-    families: overrides?.families ?? existing?.families ?? [],
-    createdAt: existing?.createdAt ?? now,
+    email: overrides?.email ?? user.email ?? "",
+    displayName: overrides?.displayName ?? user.displayName ?? "",
+    photoURL: overrides?.photoURL ?? user.photoURL ?? null,
+    locale: overrides?.locale ?? "pt",
+    role: overrides?.role ?? USER_ROLE.TITULAR,
+    status: overrides?.status ?? "active",
+    families: overrides?.families ?? [],
+    createdAt: now,
     updatedAt: now,
     lastSignInAt: now,
   };
 
   // Adiciona campos opcionais SOMENTE se existirem
-  if (overrides?.titularId ?? existing?.titularId) {
-    userData.titularId = overrides?.titularId ?? existing?.titularId;
+  if (overrides?.titularId) {
+    userData.titularId = overrides.titularId;
   }
-  if (overrides?.primaryFamilyId ?? existing?.primaryFamilyId) {
-    userData.primaryFamilyId = overrides?.primaryFamilyId ?? existing?.primaryFamilyId;
+  if (overrides?.primaryFamilyId) {
+    userData.primaryFamilyId = overrides.primaryFamilyId;
   }
-  if (overrides?.billing ?? existing?.billing) {
-    userData.billing = overrides?.billing ?? existing?.billing;
+  if (overrides?.billing) {
+    userData.billing = overrides.billing;
   }
 
-  const isNew = existing === undefined;
-  await setDoc(ref, userData, { merge: !isNew });
+  await setDoc(ref, userData);
   return userData as DomainUserProps;
 }
 

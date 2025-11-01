@@ -17,12 +17,12 @@ export function DashboardPage() {
   const { t } = useTranslation();
   const { getPlan } = usePlans();
 
-  const primaryFamilyId = domainUser?.props.primaryFamilyId ?? null;
-  const { family } = useFamily(primaryFamilyId);
-  const { lists } = useFamilyLists(primaryFamilyId);
+  const familyId = domainUser?.managedFamilyId ?? null;
+  const { family } = useFamily(familyId);
+  const { lists } = useFamilyLists(familyId);
 
   const listIds = useMemo(() => lists.map(list => list.id), [lists]);
-  const maxItemsInAnyList = useMaxListItemsCount(primaryFamilyId, listIds);
+  const maxItemsInAnyList = useMaxListItemsCount(familyId, listIds);
 
   const plan = useMemo(
     () => getPlan(domainUser?.billing?.planId ?? null),
@@ -34,10 +34,37 @@ export function DashboardPage() {
     return Object.values(family.members).filter((m) => m.status === "active").length;
   }, [family]);
 
+  const isMember = domainUser?.isFamilyMemberOnly;
+
   const stats = useMemo(() => {
     const listsCount = lists.length;
     const membersCount = activeMembers;
 
+    if (isMember) {
+      // Stats for family members
+      return [
+        {
+          icon: ClipboardList,
+          label: t("dashboard.stats.sharedLists", { defaultValue: "Listas Compartilhadas" }),
+          value: listsCount,
+          description: t("dashboard.stats.sharedListsDescription", { defaultValue: "Listas que você pode acessar" }),
+        },
+        {
+          icon: Package,
+          label: t("dashboard.stats.totalItems", { defaultValue: "Total de Itens" }),
+          value: maxItemsInAnyList,
+          description: t("dashboard.stats.totalItemsDescription", { defaultValue: "Em todas as suas listas" }),
+        },
+        {
+          icon: Users,
+          label: t("dashboard.stats.familyMembers", { defaultValue: "Membros da Família" }),
+          value: membersCount,
+          description: t("dashboard.stats.familyMembersDescription", { defaultValue: "Pessoas na família" }),
+        },
+      ];
+    }
+
+    // Stats for titular/master users
     return [
       {
         icon: ClipboardList,
@@ -63,7 +90,7 @@ export function DashboardPage() {
           : t("dashboard.stats.itemsDescription", { defaultValue: "Nenhum item cadastrado" }),
       },
     ];
-  }, [lists.length, activeMembers, maxItemsInAnyList, plan, t]);
+  }, [lists.length, activeMembers, maxItemsInAnyList, plan, t, isMember]);
 
   return (
     <motion.div
@@ -75,16 +102,25 @@ export function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-primary">
-            {t("dashboard.title", { defaultValue: "Dashboard" })}
+            {isMember
+              ? t("dashboard.memberTitle", { defaultValue: "Minhas Listas" })
+              : t("dashboard.title", { defaultValue: "Dashboard" })
+            }
           </h1>
           <p className="mt-1 text-sm text-muted">
-            {t("dashboard.subtitle", {
-              defaultValue: "Bem-vindo de volta, {{name}}",
-              name: domainUser?.displayName || "Usuário"
-            })}
+            {isMember
+              ? t("dashboard.memberSubtitle", {
+                defaultValue: "{{familyName}}",
+                familyName: family?.name || "Família"
+              })
+              : t("dashboard.subtitle", {
+                defaultValue: "Bem-vindo de volta, {{name}}",
+                name: domainUser?.displayName || "Usuário"
+              })
+            }
           </p>
         </div>
-        {plan && (
+        {plan && !isMember && (
           <StatusPill tone="info" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
             {plan.translationKey
@@ -95,11 +131,41 @@ export function DashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Upgrade CTA for members */}
+      {isMember && (
+        <Card elevated className="border-2 border-brand bg-linear-to-r from-brand/5 to-purple-500/5">
+          <div className="flex flex-col items-start gap-4 p-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex-1">
+              <div className="mb-2 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-brand" />
+                <h3 className="text-xl font-bold text-primary">
+                  {t("dashboard.upgradeCta.title", { defaultValue: "Crie sua própria família!" })}
+                </h3>
+              </div>
+              <p className="text-sm text-secondary">
+                {t("dashboard.upgradeCta.description", {
+                  defaultValue: "Torne-se titular e tenha acesso ilimitado para criar listas, convidar membros e gerenciar sua própria família."
+                })}
+              </p>
+            </div>
+            <Button
+              variant="primary"
+              size="lg"
+              className="shrink-0"
+              onClick={() => window.location.href = "/upgrade"}
+            >
+              {t("dashboard.upgradeCta.button", { defaultValue: "Virar Titular" })}
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      <div className={`grid gap-4 ${isMember ? "md:grid-cols-3" : "md:grid-cols-3"}`}>
         {stats.map((stat) => {
           const Icon = stat.icon;
-          const progress = stat.max > 0 ? (stat.value / stat.max) * 100 : 0;
-          const isUnlimited = !Number.isFinite(stat.max);
+          const hasMmax = 'max' in stat;
+          const progress = hasMmax && stat.max && stat.max > 0 ? (stat.value / stat.max) * 100 : 0;
+          const isUnlimited = !hasMmax || !stat.max || !Number.isFinite(stat.max);
 
           return (
             <Card key={stat.label} padding="lg" elevated>
@@ -112,11 +178,11 @@ export function DashboardPage() {
               <div className="mt-4">
                 <p className="text-3xl font-bold text-primary">
                   {stat.value}
-                  {!isUnlimited && <span className="text-lg text-muted">/{stat.max}</span>}
+                  {!isUnlimited && hasMmax && stat.max && <span className="text-lg text-muted">/{stat.max}</span>}
                 </p>
                 <p className="mt-1 text-sm font-medium text-secondary">{stat.label}</p>
               </div>
-              {!isUnlimited && (
+              {!isUnlimited && hasMmax && (
                 <ProgressBar value={progress} className="mt-4" />
               )}
             </Card>
@@ -128,10 +194,16 @@ export function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-primary">
-              {t("dashboard.recentLists", { defaultValue: "Listas Recentes" })}
+              {isMember
+                ? t("dashboard.sharedLists", { defaultValue: "Listas Compartilhadas" })
+                : t("dashboard.recentLists", { defaultValue: "Listas Recentes" })
+              }
             </h2>
             <p className="mt-1 text-sm text-muted">
-              {t("dashboard.recentListsHint", { defaultValue: "Suas listas mais recentes" })}
+              {isMember
+                ? t("dashboard.sharedListsHint", { defaultValue: "Listas que foram compartilhadas com você" })
+                : t("dashboard.recentListsHint", { defaultValue: "Suas listas mais recentes" })
+              }
             </p>
           </div>
           <Link to="/lists">

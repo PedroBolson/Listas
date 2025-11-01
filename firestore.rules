@@ -67,20 +67,59 @@ service cloud.firestore {
         && listData.collaborators.hasAny([currentUid()]);
     }
 
+    function isListOwner(listData) {
+      return signedIn() && listData.ownerId == currentUid();
+    }
+
+    function userFamilyCount(userData) {
+      return userData.families == null ? 0 : userData.families.size();
+    }
+
+    function requestFamilyCount() {
+      return request.resource.data.families == null ? 0 : request.resource.data.families.size();
+    }
+
+    function familyIdAt(userData, index) {
+      return userFamilyCount(userData) > index ? userData.families[index].familyId : null;
+    }
+
+    function ownsFamilyReference(userData, index) {
+      let familyId = familyIdAt(userData, index);
+      return familyId != null && isFamilyOwner(familyId);
+    }
+
+    function requestFamilyIdAt(index) {
+      return requestFamilyCount() > index ? request.resource.data.families[index].familyId : null;
+    }
+
+    function sameFamilyReference(userData, index) {
+      let originalFamilyId = familyIdAt(userData, index);
+      return originalFamilyId == null || requestFamilyIdAt(index) == originalFamilyId;
+    }
+
+    function isInSameFamily(targetUserId) {
+      let currentUserData = get(/databases/$(database)/documents/users/$(currentUid())).data;
+      let currentUserFamilyId = currentUserData.primaryFamilyId;
+      
+      return currentUserFamilyId != null
+        && exists(/databases/$(database)/documents/families/$(currentUserFamilyId))
+        && get(/databases/$(database)/documents/families/$(currentUserFamilyId)).data.members[targetUserId] != null
+        && get(/databases/$(database)/documents/families/$(currentUserFamilyId)).data.members[targetUserId].status == "active";
+    }
+
+    // Regra global para collectionGroup de invites
+    match /{path=**}/invites/{inviteId} {
+      // Permite leitura pública apenas de convites pendentes
+      allow read: if resource == null || resource.data.status == "pending";
+    }
+
     match /users/{userId} {
       allow create: if signedIn() && isSelf(userId);
-      allow read: if signedIn() && (isSelf(userId) || isMaster());
-      // Permite update se:
-      // 1. É você mesmo E não está mudando role/status (proteção básica)
-      // 2. OU é Master (pode mudar tudo)
-      allow update: if isMaster() || (
-        signedIn() 
-        && isSelf(userId)
-        // Se o campo 'role' existe no update, deve ser igual ao existente
-        && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
-        // Se o campo 'status' existe no update, deve ser igual ao existente
-        && (!('status' in request.resource.data) || request.resource.data.status == resource.data.status)
-      );
+      allow read: if signedIn() && (isSelf(userId) || isMaster() || isInSameFamily(userId));
+      allow update: if isMaster() 
+        || (signedIn() && isSelf(userId)
+          && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
+          && (!('status' in request.resource.data) || request.resource.data.status == resource.data.status));
       allow delete: if false;
     }
 
@@ -89,7 +128,14 @@ service cloud.firestore {
         && request.resource.data.ownerId == currentUid()
         && isTitular();
       allow read: if isMaster() || isFamilyOwner(familyId) || isFamilyMember(familyId);
-      allow update: if isMaster() || (isFamilyOwner(familyId) && request.resource.data.ownerId == currentUid());
+      allow update: if isMaster() 
+        || (isFamilyOwner(familyId) && request.resource.data.ownerId == currentUid())
+        || ( // Permite adicionar-se como membro via convite
+          signedIn()
+          && request.resource.data.members.keys().hasAny([currentUid()])
+          && !resource.data.members.keys().hasAny([currentUid()])
+          && request.resource.data.members[currentUid()].role == "viewer"
+        );
       allow delete: if isMaster() || isFamilyOwner(familyId);
 
       match /lists/{listId} {
@@ -99,9 +145,19 @@ service cloud.firestore {
             && request.resource.data.ownerId == currentUid()
             && isFamilyOwner(familyId)
           );
-        allow read: if isMaster() || isFamilyOwner(familyId) || listHasCollaborator(resource.data);
-        allow update: if isMaster() || (isFamilyOwner(familyId) && resource.data.ownerId == currentUid());
-        allow delete: if isMaster() || (isFamilyOwner(familyId) && resource.data.ownerId == currentUid());
+        allow read: if isMaster() || isFamilyMember(familyId);
+        allow update: if isMaster()
+          || (
+            isFamilyMember(familyId)
+            && isListOwner(resource.data)
+            && request.resource.data.ownerId == resource.data.ownerId
+            && request.resource.data.familyId == resource.data.familyId
+          );
+        allow delete: if isMaster()
+          || (
+            isFamilyMember(familyId)
+            && isListOwner(resource.data)
+          );
 
         match /items/{itemId} {
           allow read: if isMaster()
@@ -115,8 +171,39 @@ service cloud.firestore {
       }
 
       match /invites/{inviteId} {
-        allow read: if isMaster() || isFamilyOwner(familyId);
-        allow create, update, delete: if isMaster() || isFamilyOwner(familyId);
+        // Ler: Qualquer pessoa pode ler convites pendentes (para aceitar via link público)
+        // Owner e Master podem ler todos os convites da família
+        allow read: if resource.data.status == "pending" // Link público
+          || (signedIn() && (isMaster() || isFamilyOwner(familyId)));
+        
+        // Criar: Apenas owner da família
+        allow create: if signedIn() && (
+          isMaster() 
+          || (
+            isFamilyOwner(familyId)
+            && request.resource.data.createdBy == currentUid()
+            && request.resource.data.familyId == familyId
+            && request.resource.data.status == "pending"
+            && request.resource.data.usedCount == 0
+            && request.resource.data.acceptedBy.size() == 0
+          )
+        );
+        
+        // Atualizar: Owner (revogar) OU qualquer usuário autenticado (aceitar)
+        allow update: if signedIn() && (
+          isMaster()
+          || isFamilyOwner(familyId) // Owner pode revogar
+          || ( // Usuário pode aceitar convite
+            resource.data.status == "pending"
+            && request.resource.data.usedCount == resource.data.usedCount + 1
+            && request.resource.data.acceptedBy.size() == resource.data.acceptedBy.size() + 1
+            && request.resource.data.acceptedBy.hasAll(resource.data.acceptedBy)
+            && request.resource.data.acceptedBy[request.resource.data.acceptedBy.size() - 1] == currentUid()
+          )
+        );
+        
+        // Deletar: Apenas owner e master
+        allow delete: if isMaster() || isFamilyOwner(familyId);
       }
     }
 

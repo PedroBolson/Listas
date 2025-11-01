@@ -6,6 +6,8 @@ import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Avatar } from "../../components/ui/Avatar";
 import { StatusPill } from "../../components/feedback/StatusPill";
+import { InviteMemberModal } from "../../components/invites/InviteMemberModal";
+import { JoinFamilyModal } from "../../components/invites/JoinFamilyModal";
 import { useAuth } from "../auth/useAuth";
 import { useFamily } from "../../hooks/useFamily";
 import { removeFamilyMember } from "../../services/familyService";
@@ -32,12 +34,22 @@ export function FamilyPage() {
   const { t } = useTranslation();
   const [removing, setRemoving] = useState<string | null>(null);
   const [memberDetails, setMemberDetails] = useState<Map<string, DomainUserProps>>(new Map());
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
 
   const primaryFamilyId = domainUser?.props.primaryFamilyId ?? null;
   const { family, loading } = useFamily(primaryFamilyId);
   const { canInviteMember } = usePermissions();
 
   const canManage = domainUser?.isTitular || domainUser?.isMaster;
+
+  // Calcular slots disponíveis
+  const availableSlots = useMemo(() => {
+    if (!domainUser?.billing?.seats) return 0;
+    const total = domainUser.billing.seats.total ?? 0;
+    const used = domainUser.billing.seats.used ?? 0;
+    return Math.max(0, total - used);
+  }, [domainUser]);
 
   const members = useMemo(() => {
     if (!family) return [];
@@ -72,9 +84,27 @@ export function FamilyPage() {
       for (const member of members) {
         if (member.id) {
           try {
-            const userData = await getUserById(member.id);
-            if (userData) {
-              details.set(member.id, userData);
+            // Prefer cached profile data on family.members (set by server/function)
+            if ((member as any).displayName) {
+              // Build a minimal DomainUserProps from family member profile
+              const minimal: DomainUserProps = {
+                id: member.id,
+                email: (member as any).email || "",
+                displayName: (member as any).displayName || "",
+                photoURL: null,
+                locale: "pt",
+                role: "member",
+                status: "active",
+                families: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              };
+              details.set(member.id, minimal);
+            } else {
+              const userData = await getUserById(member.id);
+              if (userData) {
+                details.set(member.id, userData);
+              }
             }
           } catch (error) {
             console.error(`Erro ao buscar usuário ${member.id}:`, error);
@@ -113,7 +143,19 @@ export function FamilyPage() {
   };
 
   const handleInviteMember = () => {
-    alert(t("family.inviteNotImplemented", { defaultValue: "Em breve!" }));
+    setShowInviteModal(true);
+  };
+
+  const handleJoinFamily = () => {
+    setShowJoinModal(true);
+  };
+
+  const handleJoinSuccess = (familyId: string, familyName: string) => {
+    // Atualizar para a nova família
+    // O AuthProvider vai recarregar automaticamente
+    console.log(`Joined family: ${familyId} - ${familyName}`);
+    // Opcional: Trocar para a nova família
+    // navigate('/dashboard');
   };
 
   if (loading) {
@@ -156,7 +198,7 @@ export function FamilyPage() {
       animate="visible"
       className="space-y-6 p-6"
     >
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">
             {t("family.title", { defaultValue: "Família" })}
@@ -167,21 +209,30 @@ export function FamilyPage() {
             })}
           </p>
         </div>
-        {canManage && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+          {canManage && (
+            <Button
+              onClick={() => {
+                const check = canInviteMember();
+                if (!check.allowed) {
+                  alert(check.reason || t("family.limitReached"));
+                  return;
+                }
+                handleInviteMember();
+              }}
+              icon={<UserPlus className="size-4" />}
+            >
+              {t("family.inviteMember", { defaultValue: "Convidar Membro" })}
+            </Button>
+          )}
           <Button
-            onClick={() => {
-              const check = canInviteMember();
-              if (!check.allowed) {
-                alert(check.reason || t("family.limitReached"));
-                return;
-              }
-              handleInviteMember();
-            }}
+            onClick={handleJoinFamily}
+            variant="outline"
             icon={<UserPlus className="size-4" />}
           >
-            {t("family.inviteMember", { defaultValue: "Convidar Membro" })}
+            {t("invites.joinFamily", { defaultValue: "Participar de outra família" })}
           </Button>
-        )}
+        </div>
       </motion.div>
 
       <motion.div variants={item}>
@@ -207,7 +258,7 @@ export function FamilyPage() {
             {t("family.titular", { defaultValue: "Titular" })}
           </h2>
           <Card className="border-2 border-yellow-500/20 bg-linear-to-br from-yellow-50 to-amber-50 p-4 dark:from-yellow-950/20 dark:to-amber-950/20">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <Avatar name={memberDetails.get(titular.id)?.displayName || memberDetails.get(titular.id)?.email || titular.id || "User"} />
@@ -215,9 +266,9 @@ export function FamilyPage() {
                     <Crown className="size-3 text-white" />
                   </div>
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="font-semibold">
+                    <p className="truncate font-semibold">
                       {memberDetails.get(titular.id)?.displayName || memberDetails.get(titular.id)?.email || titular.id?.slice(0, 8) || "Unknown"}
                       {titular.id === domainUser?.id && (
                         <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-400">
@@ -226,13 +277,13 @@ export function FamilyPage() {
                       )}
                     </p>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="truncate text-sm text-gray-600 dark:text-gray-400">
                     {memberDetails.get(titular.id)?.email || "Titular da família"}
                   </p>
                 </div>
               </div>
 
-              <StatusPill tone="success">
+              <StatusPill tone="success" className="shrink-0">
                 <Crown className="mr-1 size-3" />
                 {t("family.titular", { defaultValue: "Titular" })}
               </StatusPill>
@@ -254,12 +305,12 @@ export function FamilyPage() {
 
               return (
                 <Card key={member.id} className="p-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                       <Avatar name={userDetails?.displayName || userDetails?.email || member.id || "User"} />
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium">
+                          <p className="truncate font-medium">
                             {userDetails?.displayName || userDetails?.email || member.id?.slice(0, 8) || "Unknown"}
                             {isCurrentUser && (
                               <span className="ml-2 text-sm text-gray-500">
@@ -268,13 +319,13 @@ export function FamilyPage() {
                             )}
                           </p>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="truncate text-sm text-gray-600 dark:text-gray-400">
                           {userDetails?.email || "Membro"}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <StatusPill tone="info">
                         {t("family.member", { defaultValue: "Membro" })}
                       </StatusPill>
@@ -296,6 +347,27 @@ export function FamilyPage() {
             })}
           </div>
         </motion.div>
+      )}
+
+      {/* Modals */}
+      {canManage && domainUser && family && (
+        <InviteMemberModal
+          isOpen={showInviteModal}
+          onClose={() => setShowInviteModal(false)}
+          familyId={family.id}
+          userId={domainUser.id}
+          familyName={family.name}
+          availableSlots={availableSlots}
+        />
+      )}
+
+      {domainUser && (
+        <JoinFamilyModal
+          isOpen={showJoinModal}
+          onClose={() => setShowJoinModal(false)}
+          userId={domainUser.id}
+          onSuccess={handleJoinSuccess}
+        />
       )}
     </motion.div>
   );

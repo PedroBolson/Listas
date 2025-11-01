@@ -3,6 +3,11 @@
     "name": "ListsHub",
     "tagline": "Organize everything, share with who matters, and keep control of your business."
   },
+  "common": {
+    "or": "or",
+    "back": "Back",
+    "loading": "Loading..."
+  },
   "actions": {
     "signIn": "Sign in with Google",
     "signOut": "Sign out",
@@ -26,6 +31,10 @@
     "showAdvanced": "Add notes/quantity",
     "hideAdvanced": "Hide options",
     "backToLists": "Back to lists"
+  },
+  "settings": {
+    "theme": "Theme",
+    "language": "Language"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -162,6 +171,10 @@
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Welcome back, {{name}}",
+    "memberTitle": "My Lists",
+    "memberSubtitle": "{{familyName}}",
+    "sharedLists": "Shared Lists",
+    "sharedListsHint": "Lists that have been shared with you",
     "welcomeMaster": "Master control center",
     "welcomeTitular": "Hello {{name}}, let's organize the family today?",
     "welcomeMember": "Welcome! These are the lists shared with you.",
@@ -174,6 +187,12 @@
     "stats": {
       "lists": "Lists",
       "listsDescription": "{{count}} active families",
+      "sharedLists": "Shared lists",
+      "sharedListsDescription": "Lists you can access",
+      "totalItems": "Total Items",
+      "totalItemsDescription": "Across all your lists",
+      "familyMembers": "Family Members",
+      "familyMembersDescription": "People in the family",
       "members": "Members",
       "membersDescription": "Guest access control",
       "items": "Items",
@@ -185,6 +204,11 @@
       "uptimeDescription": "Updated in real-time",
       "activityLabel": "Activity",
       "activityDescription": "Synced recent events"
+    },
+    "upgradeCta": {
+      "title": "Create your own family!",
+      "description": "Become a titular and get unlimited access to create lists, invite members, and manage your own family.",
+      "button": "Become Titular"
     }
   },
   "lists": {
@@ -251,7 +275,17 @@
     "confirmDeleteCompleted": "This will permanently delete {{count}} {{type}}. This action cannot be undone.",
     "confirmDeleteAll": "This will permanently delete ALL {{count}} items from this list. This action cannot be undone.",
     "confirmDeleteListCascade": "⚠️ WARNING: This will delete the list \"{{name}}\" and ALL its {{count}} items. This action cannot be undone!",
-    "deleteError": "Error deleting"
+    "deleteError": "Error deleting",
+    "share": {
+      "title": "Share list",
+      "description": "Select family members who can access this list and set their permissions.",
+      "noMembers": "No other members in the family",
+      "canCreate": "Can add items",
+      "canToggle": "Can mark as purchased",
+      "canDelete": "Can remove items",
+      "saveError": "Error saving permissions",
+      "manageMembers": "Manage members"
+    }
   },
   "family": {
     "title": "Family and guests",
@@ -265,12 +299,15 @@
     "noFamilyDescription": "Create your first family to start organizing and shares lists with whoever you want.",
     "selectFamily": "Select family",
     "switchFamily": "Switch family",
+    "switchingFamily": "Switching family...",
     "inviteMember": "Invite member",
     "maxFamiliesReached": "You've reached the limit of {{max}} families. Upgrade to create more.",
     "totalMembers": "Total Members",
     "you": "you",
     "titular": "Owner",
     "member": "Member",
+    "memberRole": "Member",
+    "titularRole": "Owner",
     "otherMembers": "Other Members",
     "actions": {
       "detach": "Remove from family",
@@ -350,5 +387,91 @@
       "helpText": "Grant lifetime plans, adjust custom limits, and disconnect any member without affecting lists.",
       "auditLog": "Open audit"
     }
+  },
+  "invites": {
+    "inviteMember": "Invite Member",
+    "inviteToFamily": "To: {{family}}",
+    "generate": "Generate Invite",
+    "generateDescription": "Generate a link and code to invite someone to your family. The invite is valid for 7 days.",
+    "oneSlotAvailable": "1 slot available in your plan",
+    "multipleSlotsAvailable": "{{count}} slots available in your plan",
+    "inviteLink": "Invite Link",
+    "linkDescription": "Share this link via WhatsApp, email or SMS",
+    "inviteCode": "Invite Code",
+    "codeDescription": "Anyone with an account can use this code to join",
+    "copied": "Copied!",
+    "copyCode": "Copy code",
+    "expiresIn": "Valid for {{days}} days",
+    "singleUse": "Can be used once",
+    "multipleUses": "Can be used up to {{count}} times",
+    "generateNew": "Generate new",
+    "createError": "Error generating invite",
+    "joinFamily": "Join a family",
+    "enterCode": "Enter the 6-digit code",
+    "validating": "Validating code...",
+    "joinedSuccess": "You are now part of the family!",
+    "acceptError": "Invalid or expired code",
+    "codeHelp": "The code is in the invite you received",
+    "orUseLink": "You can also click on the invite link",
+    "needLogin": "You need to be logged in to accept the invite",
+    "loadingInvite": "Loading invite...",
+    "invalidTitle": "Invalid Invite",
+    "invalidMessage": "This invite does not exist or has already expired.",
+    "goHome": "Go to home",
+    "youAreInvited": "You're invited!",
+    "toJoinFamily": "To join: {{family}}",
+    "createAccount": "Create new account",
+    "alreadyHaveAccount": "Already have an account - Sign in",
+    "acceptingInvite": "Accepting invite...",
+    "successTitle": "Welcome!",
+    "successMessage": "You are now part of: {{family}}",
+    "redirecting": "Redirecting...",
+    "errorTitle": "Error accepting",
+    "tryAgain": "Try again",
+    "loginToJoin": "Log in and join",
+    "createAccountToJoin": "Create account and join",
+    "toJoinFamilyGeneric": "To join the family",
+    "loginButton": "Log in",
+    "createAccountButton": "Create account",
+    "switchToSignup": "Create new account",
+    "switchToLogin": "Already have an account"
+  },
+  "upgrade": {
+    "title": "Become a Titular",
+    "subtitle": "Unlock all features and create your own family",
+    "benefits": {
+      "ownFamily": {
+        "title": "Own Family",
+        "description": "Create and manage your own family"
+      },
+      "unlimitedLists": {
+        "title": "Unlimited Lists",
+        "description": "Create as many lists as you need"
+      },
+      "inviteMembers": {
+        "title": "Invite Members",
+        "description": "Add family members and friends"
+      },
+      "fullControl": {
+        "title": "Full Control",
+        "description": "Manage permissions and access"
+      }
+    },
+    "plan": {
+      "free": {
+        "name": "Free Plan",
+        "description": "Start for free and manage your family",
+        "features": {
+          "lists": "Up to 10 lists",
+          "members": "Up to 5 members",
+          "items": "Up to 50 items per list"
+        }
+      }
+    },
+    "button": {
+      "confirm": "Confirm Upgrade",
+      "loading": "Processing..."
+    },
+    "disclaimer": "You can cancel or upgrade at any time"
   }
 }

@@ -114,6 +114,52 @@ export async function removeListAccess(
     });
 }
 
+export async function updateListPermissions(
+    familyId: string,
+    listId: string,
+    permissions: Array<{ userId: string; canCreateItems: boolean; canToggleItems: boolean; canDeleteItems: boolean }>,
+    collaborators: string[]
+): Promise<void> {
+    const listRef = doc(db, COLLECTIONS.FAMILIES, familyId, "lists", listId);
+    const familyRef = doc(db, COLLECTIONS.FAMILIES, familyId);
+
+    await updateDoc(listRef, {
+        permissions,
+        collaborators,
+        updatedAt: new Date().toISOString(),
+    });
+
+    const familySnap = await getDoc(familyRef);
+    if (!familySnap.exists()) return;
+
+    const familyData = familySnap.data();
+    const members = familyData.members || {};
+    const updatedMembers = { ...members };
+
+    for (const [userId, memberProfile] of Object.entries(members)) {
+        const currentAllowedLists = (memberProfile as any).allowedLists || [];
+        const isCollaborator = collaborators.includes(userId);
+        const hasListAccess = currentAllowedLists.includes(listId);
+
+        if (isCollaborator && !hasListAccess) {
+            updatedMembers[userId] = {
+                ...(memberProfile as any),
+                allowedLists: [...currentAllowedLists, listId],
+            };
+        } else if (!isCollaborator && hasListAccess) {
+            updatedMembers[userId] = {
+                ...(memberProfile as any),
+                allowedLists: currentAllowedLists.filter((id: string) => id !== listId),
+            };
+        }
+    }
+
+    await updateDoc(familyRef, {
+        members: updatedMembers,
+        updatedAt: new Date().toISOString(),
+    });
+}
+
 export function subscribeToFamilyLists(
     familyId: string,
     onUpdate: (lists: ListRecord[]) => void,

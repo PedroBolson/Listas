@@ -234,3 +234,24 @@ export function canMemberViewList(
     // Verifica se a lista está na allowedLists
     return member.allowedLists.includes(listId);
 }
+
+/**
+ * Busca todas as famílias onde o usuário é membro ativo
+ * Usa Cloud Function para ter acesso aos dados de forma segura
+ */
+export async function getUserFamilies(): Promise<Array<{
+    familyId: string;
+    familyName: string;
+    role: string;
+}>> {
+    const { httpsCallable } = await import("firebase/functions");
+    const { functions } = await import("../lib/firebase");
+
+    const getUserFamiliesFunction = httpsCallable<
+        void,
+        { success: boolean; families: Array<{ familyId: string; familyName: string; role: string }> }
+    >(functions, "getUserFamilies");
+
+    const result = await getUserFamiliesFunction();
+    return result.data.families;
+}

@@ -106,7 +106,22 @@ export function AuthGate({ children }: AuthGateProps) {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <Spinner className="h-12 w-12 border-4" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <Spinner className="h-12 w-12 border-4" />
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+            className="text-sm text-muted"
+          >
+            {t("common.loading", { defaultValue: "Carregando..." })}
+          </motion.p>
+        </motion.div>
       </div>
     );
   }

@@ -1,14 +1,25 @@
 import type { HTMLAttributes } from "react";
+import { motion } from "framer-motion";
 import { cn } from "../../utils/cn";
 
-export function Spinner({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+export function Spinner({ className }: Pick<HTMLAttributes<HTMLDivElement>, 'className'>) {
   return (
-    <div
+    <motion.div
       className={cn(
-        "h-6 w-6 animate-spin rounded-full border-2 border-brand/30 border-t-brand",
+        "h-6 w-6 rounded-full border-[3px] border-muted/20",
         className,
       )}
-      {...props}
+      style={{
+        borderTopColor: "var(--color-brand)",
+        borderRightColor: "var(--color-brand)",
+        borderBottomColor: "transparent",
+      }}
+      animate={{ rotate: 360 }}
+      transition={{
+        duration: 0.6,
+        repeat: Infinity,
+        ease: "linear",
+      }}
     />
   );
 }

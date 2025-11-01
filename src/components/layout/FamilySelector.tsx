@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -6,6 +6,7 @@ import { useAuth } from "../../features/auth/useAuth";
 import { updateUser } from "../../services/userService";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { Spinner } from "../ui/Spinner";
 
 interface FamilySelectorProps {
     onCreateFamily?: () => void;
@@ -15,26 +16,51 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
     const { domainUser } = useAuth();
     const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
+    const [userFamilies, setUserFamilies] = useState<Array<{
+        familyId: string;
+        familyName: string;
+        role: string;
+    }>>([]);
+    const [loading, setLoading] = useState(true);
+    const [switching, setSwitching] = useState(false);
 
-    const activeFamilies = domainUser?.activeFamilies || [];
-    const currentFamilyId = domainUser?.props.primaryFamilyId;
-    const currentFamily = activeFamilies.find(f => f.familyId === currentFamilyId);
+    const currentFamilyId = domainUser?.managedFamilyId;
 
-    // Usuário Titular pode ter múltiplas famílias se tiver plano premium ou master
+    // Buscar TODAS as famílias do usuário via Cloud Function
+    useEffect(() => {
+        const fetchUserFamilies = async () => {
+            if (!domainUser?.id) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const { getUserFamilies } = await import("../../services/familyService");
+                const families = await getUserFamilies();
+                setUserFamilies(families);
+            } catch (error) {
+                console.error("❌ Erro ao buscar famílias:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserFamilies();
+    }, [domainUser?.id]);
+
+    // Usuário Titular pode criar múltiplas famílias se tiver plano premium ou master
     const planId = domainUser?.billing?.planId;
     const canHaveMultipleFamilies = domainUser?.isTitular && (planId === "premium" || planId === "master");
 
     // Verificar se atingiu o limite de famílias
     const maxFamilies = planId === "master" ? Infinity : planId === "premium" ? 3 : 1;
-    const canCreateMore = activeFamilies.length < maxFamilies;
+    const canCreateMore = userFamilies.length < maxFamilies;
 
-    if (!domainUser?.isTitular) {
-        // Members não veem seletor, só veem a família atual
-        return null;
-    }
+    // SEMPRE mostrar se tiver mais de 1 família (independente do role)
+    // Ou se for titular e puder criar mais
+    const shouldShow = userFamilies.length > 1 || (domainUser?.isTitular && canHaveMultipleFamilies && canCreateMore);
 
-    if (activeFamilies.length <= 1 && !canHaveMultipleFamilies) {
-        // Sem múltiplas famílias e sem permissão para criar
+    if (loading || !shouldShow) {
         return null;
     }
 
@@ -48,7 +74,9 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
                 className="min-w-[200px] justify-between"
             >
                 <span className="truncate">
-                    {currentFamily ? `Família: ${currentFamily.familyId}` : t("family.selectFamily")}
+                    {currentFamilyId
+                        ? userFamilies.find(f => f.familyId === currentFamilyId)?.familyName || `Família ${currentFamilyId.slice(0, 8)}`
+                        : t("family.selectFamily")}
                 </span>
             </Button>
 
@@ -63,14 +91,15 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
 
                         {/* Dropdown */}
                         <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ type: "spring", duration: 0.4, bounce: 0.3 }}
                             className="absolute right-0 top-full z-50 mt-2 w-64"
                         >
                             <Card className="p-2">
                                 <div className="space-y-1">
-                                    {activeFamilies.map((family) => (
+                                    {userFamilies.map((family) => (
                                         <button
                                             key={family.familyId}
                                             className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition hover:bg-surface-alt"
@@ -83,23 +112,39 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
                                                 try {
                                                     if (!domainUser) return;
 
-                                                    // Atualizar primaryFamilyId do usuário
+                                                    // Inicia animação de transição
+                                                    setSwitching(true);
+                                                    setIsOpen(false);
+
+                                                    // Aguarda um pouco para a animação começar
+                                                    await new Promise(resolve => setTimeout(resolve, 200));
+
+                                                    // Atualizar primaryFamilyId sempre (funciona para titular e member)
                                                     await updateUser(domainUser.id, {
                                                         primaryFamilyId: family.familyId,
                                                     });
 
-                                                    setIsOpen(false);
-                                                    // O AuthProvider vai detectar a mudança e recarregar
+                                                    // Aguarda mais um pouco antes de recarregar
+                                                    await new Promise(resolve => setTimeout(resolve, 300));
+
+                                                    // Recarrega a página para atualizar todos os dados
+                                                    window.location.reload();
                                                 } catch (error) {
                                                     console.error("❌ Erro ao trocar família:", error);
+                                                    setSwitching(false);
                                                 }
                                             }}
                                         >
-                                            <span className="truncate">
-                                                Família {family.familyId.slice(0, 8)}
-                                            </span>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="truncate font-medium">
+                                                    {family.familyName}
+                                                </span>
+                                                <span className="text-xs text-muted">
+                                                    {family.role === "titular" || family.role === "owner" ? t("family.titularRole") : t("family.memberRole")}
+                                                </span>
+                                            </div>
                                             {family.familyId === currentFamilyId && (
-                                                <Check className="size-4 text-brand" />
+                                                <Check className="size-4 shrink-0 text-brand" />
                                             )}
                                         </button>
                                     ))}
@@ -123,6 +168,31 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
                             </Card>
                         </motion.div>
                     </>
+                )}
+            </AnimatePresence>
+
+            {/* Overlay de transição ao trocar família */}
+            <AnimatePresence>
+                {switching && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="fixed inset-0 z-9999 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.1, duration: 0.3 }}
+                            className="flex flex-col items-center gap-4"
+                        >
+                            <Spinner className="h-12 w-12" />
+                            <p className="text-sm font-medium text-secondary">
+                                {t("family.switchingFamily", { defaultValue: "Trocando de família..." })}
+                            </p>
+                        </motion.div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>

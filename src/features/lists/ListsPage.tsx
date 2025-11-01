@@ -16,8 +16,8 @@ export function ListsPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const primaryFamilyId = domainUser?.props.primaryFamilyId ?? null;
-  const { lists, loading } = useFamilyLists(primaryFamilyId);
+  const familyId = domainUser?.managedFamilyId ?? null;
+  const { lists, loading } = useFamilyLists(familyId);
   const { canCreateList } = usePermissions();
 
   const filteredLists = lists.filter((list) =>

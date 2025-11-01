@@ -32,9 +32,9 @@ export function BillingPage() {
   const { t } = useTranslation();
   const { plans, getPlan } = usePlans();
 
-  const primaryFamilyId = domainUser?.props.primaryFamilyId ?? null;
-  const { family } = useFamily(primaryFamilyId);
-  const { lists } = useFamilyLists(primaryFamilyId);
+  const familyId = domainUser?.managedFamilyId ?? null;
+  const { family } = useFamily(familyId);
+  const { lists } = useFamilyLists(familyId);
 
   const billing = domainUser?.billing;
   const currentPlan = useMemo(
