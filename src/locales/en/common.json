@@ -94,7 +94,8 @@
   },
   "roles": {
     "master": "Master",
-    "titular": "Titular",
+    "titular": "Owner",
+    "viewer": "Member",
     "member": "Member",
     "guest": "Guest"
   },

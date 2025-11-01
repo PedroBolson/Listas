@@ -1,6 +1,6 @@
 import { Crown, LogOut, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "../../features/auth/useAuth";
 import { ThemeToggle } from "./ThemeToggle";
@@ -15,6 +15,41 @@ export function TopBar() {
   const { domainUser, signOut } = useAuth();
   const { t } = useTranslation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [currentFamilyRole, setCurrentFamilyRole] = useState<string | null>(null);
+
+  // Detectar role na família atual
+  useEffect(() => {
+    const fetchCurrentFamilyRole = async () => {
+      if (!domainUser?.managedFamilyId) {
+        setCurrentFamilyRole(null);
+        return;
+      }
+
+      try {
+        const { getFamilyById } = await import("../../services/familyService");
+        const family = await getFamilyById(domainUser.managedFamilyId);
+
+        if (!family) {
+          setCurrentFamilyRole(null);
+          return;
+        }
+
+        // Se é dono da família
+        if (family.ownerId === domainUser.id) {
+          setCurrentFamilyRole("titular");
+        } else {
+          // Se é membro, pegar o role do members
+          const memberData = family.members?.[domainUser.id];
+          setCurrentFamilyRole(memberData?.role || "viewer");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar role da família:", error);
+        setCurrentFamilyRole(null);
+      }
+    };
+
+    fetchCurrentFamilyRole();
+  }, [domainUser?.managedFamilyId, domainUser?.id]);
 
   return (
     <header className="relative z-50 flex items-center justify-between gap-2 rounded-4xl border border-soft bg-surface px-4 py-3 shadow-soft/40 backdrop-blur lg:gap-3 lg:px-8 lg:py-4">
@@ -28,11 +63,11 @@ export function TopBar() {
             {domainUser?.displayName ?? "—"}
           </span>
           <div className="flex items-center gap-2 text-xs text-muted">
-            <span className="truncate">
+            <span className="truncate capitalize">
               {domainUser?.role === USER_ROLE.MASTER
                 ? t("roles.master")
-                : domainUser?.role === USER_ROLE.TITULAR
-                  ? t("plans.currentPlan")
+                : currentFamilyRole
+                  ? t(`roles.${currentFamilyRole}`)
                   : t("roles.guest")}
             </span>
             {domainUser?.status ? (
@@ -52,11 +87,11 @@ export function TopBar() {
             <span className="truncate text-xs font-semibold text-primary">
               {domainUser?.displayName ?? "—"}
             </span>
-            <span className="truncate text-xs text-muted">
+            <span className="truncate text-xs text-muted capitalize">
               {domainUser?.role === USER_ROLE.MASTER
                 ? t("roles.master")
-                : domainUser?.role === USER_ROLE.TITULAR
-                  ? t("plans.currentPlan")
+                : currentFamilyRole
+                  ? t(`roles.${currentFamilyRole}`)
                   : t("roles.guest")}
             </span>
           </div>
@@ -76,7 +111,11 @@ export function TopBar() {
           <div className="flex flex-col">
             <span className="text-xs font-semibold">{domainUser?.email}</span>
             <span className="text-[10px] uppercase text-muted">
-              {domainUser ? t(`roles.${domainUser.role}`) : ""}
+              {domainUser?.role === USER_ROLE.MASTER
+                ? t("roles.master")
+                : currentFamilyRole
+                  ? t(`roles.${currentFamilyRole}`)
+                  : ""}
             </span>
           </div>
         </div>

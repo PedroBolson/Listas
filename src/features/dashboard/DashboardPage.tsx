@@ -34,13 +34,31 @@ export function DashboardPage() {
     return Object.values(family.members).filter((m) => m.status === "active").length;
   }, [family]);
 
-  const isMember = domainUser?.isFamilyMemberOnly;
+  // Verifica se é membro (viewer) da família ATUAL, não globalmente
+  const isViewerOfCurrentFamily = useMemo(() => {
+    if (!family || !domainUser) return false;
+    // Se é owner da família atual, não é viewer
+    if (family.ownerId === domainUser.id) return false;
+    // Verifica o role na família atual
+    const memberData = family.members[domainUser.id];
+    const isViewer = memberData?.role === 'viewer';
+
+    console.log('🔍 Dashboard - isViewerOfCurrentFamily:', {
+      familyId: family.id,
+      familyOwnerId: family.ownerId,
+      userId: domainUser.id,
+      memberRole: memberData?.role,
+      isViewer
+    });
+
+    return isViewer;
+  }, [family, domainUser]);
 
   const stats = useMemo(() => {
     const listsCount = lists.length;
     const membersCount = activeMembers;
 
-    if (isMember) {
+    if (isViewerOfCurrentFamily) {
       // Stats for family members
       return [
         {
@@ -90,7 +108,7 @@ export function DashboardPage() {
           : t("dashboard.stats.itemsDescription", { defaultValue: "Nenhum item cadastrado" }),
       },
     ];
-  }, [lists.length, activeMembers, maxItemsInAnyList, plan, t, isMember]);
+  }, [lists.length, activeMembers, maxItemsInAnyList, plan, t, isViewerOfCurrentFamily]);
 
   return (
     <motion.div
@@ -102,13 +120,13 @@ export function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-primary">
-            {isMember
+            {isViewerOfCurrentFamily
               ? t("dashboard.memberTitle", { defaultValue: "Minhas Listas" })
               : t("dashboard.title", { defaultValue: "Dashboard" })
             }
           </h1>
           <p className="mt-1 text-sm text-muted">
-            {isMember
+            {isViewerOfCurrentFamily
               ? t("dashboard.memberSubtitle", {
                 defaultValue: "{{familyName}}",
                 familyName: family?.name || "Família"
@@ -120,7 +138,7 @@ export function DashboardPage() {
             }
           </p>
         </div>
-        {plan && !isMember && (
+        {plan && !isViewerOfCurrentFamily && (
           <StatusPill tone="info" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
             {plan.translationKey
@@ -131,8 +149,8 @@ export function DashboardPage() {
         )}
       </div>
 
-      {/* Upgrade CTA for members */}
-      {isMember && (
+      {/* Upgrade CTA for members - só mostra se NÃO é titular de nenhuma família */}
+      {domainUser?.isFamilyMemberOnly && (
         <Card elevated className="border-2 border-brand bg-linear-to-r from-brand/5 to-purple-500/5">
           <div className="flex flex-col items-start gap-4 p-6 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
@@ -160,7 +178,7 @@ export function DashboardPage() {
         </Card>
       )}
 
-      <div className={`grid gap-4 ${isMember ? "md:grid-cols-3" : "md:grid-cols-3"}`}>
+      <div className={`grid gap-4 ${isViewerOfCurrentFamily ? "md:grid-cols-3" : "md:grid-cols-3"}`}>
         {stats.map((stat) => {
           const Icon = stat.icon;
           const hasMmax = 'max' in stat;
@@ -194,13 +212,13 @@ export function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-primary">
-              {isMember
+              {isViewerOfCurrentFamily
                 ? t("dashboard.sharedLists", { defaultValue: "Listas Compartilhadas" })
                 : t("dashboard.recentLists", { defaultValue: "Listas Recentes" })
               }
             </h2>
             <p className="mt-1 text-sm text-muted">
-              {isMember
+              {isViewerOfCurrentFamily
                 ? t("dashboard.sharedListsHint", { defaultValue: "Listas que foram compartilhadas com você" })
                 : t("dashboard.recentListsHint", { defaultValue: "Suas listas mais recentes" })
               }

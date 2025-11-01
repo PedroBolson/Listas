@@ -96,6 +96,7 @@
   "roles": {
     "master": "Master",
     "titular": "Titular",
+    "viewer": "Membro",
     "member": "Membro",
     "guest": "Convidado"
   },
