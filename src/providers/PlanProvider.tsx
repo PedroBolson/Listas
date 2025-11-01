@@ -60,7 +60,13 @@ export function PlanProvider({ children }: PlanProviderProps) {
 
     const unsubscribe = onSnapshot(
       colRef,
+      { includeMetadataChanges: false }, // Só recebe quando dados mudam de verdade
       (snapshot) => {
+        // Se vier vazio do cache, ignora e espera o servidor
+        if (snapshot.empty && snapshot.metadata.fromCache) {
+          return;
+        }
+
         const parsed = snapshot.docs.map((doc) => {
           const data = doc.data() as PlanDocument;
           return new SubscriptionPlan({
@@ -95,7 +101,11 @@ export function PlanProvider({ children }: PlanProviderProps) {
   }, []);
 
   const getPlan = useCallback(
-    (planId: string | undefined | null) => plans.find((plan) => plan.id === planId),
+    (planId: string | undefined | null) => {
+      if (!planId) return undefined;
+      // Busca por ID do documento OU por tier (compatibilidade com dados antigos)
+      return plans.find((plan) => plan.id === planId || plan.tier === planId);
+    },
     [plans],
   );
 

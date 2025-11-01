@@ -63,7 +63,7 @@ export function ListsPage() {
       </div>
 
       <Card padding="lg" elevated className="mx-auto w-full max-w-md sm:max-w-full">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
             <input
@@ -74,8 +74,7 @@ export function ListsPage() {
               className="w-full rounded-xl border border-soft bg-surface-alt py-3 pl-10 pr-4 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/40"
             />
           </div>
-          <Button variant="ghost" className="gap-2">
-            <Filter className="h-4 w-4" />
+          <Button variant="ghost" icon={<Filter className="h-4 w-4" />}>
             {t("actions.filter", { defaultValue: "Filtrar" })}
           </Button>
         </div>
@@ -108,9 +107,8 @@ export function ListsPage() {
                 : t("lists.emptyHint", { defaultValue: "Crie sua primeira lista para começar" })}
             </p>
             {!searchTerm && (domainUser?.isTitular || domainUser?.isMaster) && (
-              <Button onClick={handleCreateList} className="mt-6 gap-2">
-                <Plus className="h-5 w-5" />
-                {t("actions.createList", { defaultValue: "Criar lista" })}
+              <Button onClick={handleCreateList} icon={<Plus className="h-5 w-5" />} className="mt-6">
+                {t("actions.createList", { defaultValue: "Criar nova lista" })}
               </Button>
             )}
           </div>

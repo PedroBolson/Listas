@@ -36,6 +36,9 @@ export function BillingPage() {
   const { family } = useFamily(familyId);
   const { lists } = useFamilyLists(familyId);
 
+  // Verifica se pode acessar billing da família atual usando FamilyRecord REAL
+  const canAccessBilling = domainUser?.canManageFamilyFromRecord(family) ?? false;
+
   const billing = domainUser?.billing;
   const currentPlan = useMemo(
     () => getPlan(billing?.planId ?? null) ?? null,
@@ -70,6 +73,27 @@ export function BillingPage() {
       },
     ];
   }, [currentPlan, lists.length, activeMembers, t]);
+
+  // Se não pode acessar billing da família atual, mostra mensagem
+  if (!canAccessBilling) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <Package className="mx-auto mb-4 size-12 text-gray-400" />
+          <h2 className="mb-2 text-xl font-semibold">
+            {t("billing.noAccess", { defaultValue: "Acesso restrito" })}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {t("billing.noAccessMessage", { defaultValue: "Apenas titulares podem acessar planos e cobrança" })}
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (!billing || !currentPlan) {
     return (

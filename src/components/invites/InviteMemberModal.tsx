@@ -199,18 +199,16 @@ export function InviteMemberModal({ isOpen, onClose, familyId, userId, familyNam
                                             <div className="mb-2 text-4xl font-bold tracking-wider text-brand">
                                                 {invite.code}
                                             </div>
-                                            <Button onClick={handleCopyCode} variant="ghost" size="sm">
-                                                {copiedCode ? (
-                                                    <>
-                                                        <Check className="mr-2 h-4 w-4 text-green-600" />
-                                                        {t("invites.copied", { defaultValue: "Copiado!" })}
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Copy className="mr-2 h-4 w-4" />
-                                                        {t("invites.copyCode", { defaultValue: "Copiar código" })}
-                                                    </>
-                                                )}
+                                            <Button 
+                                                onClick={handleCopyCode} 
+                                                variant="ghost" 
+                                                size="sm"
+                                                icon={copiedCode ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                                            >
+                                                {copiedCode 
+                                                    ? t("invites.copied", { defaultValue: "Copiado!" })
+                                                    : t("invites.copyCode", { defaultValue: "Copiar código" })
+                                                }
                                             </Button>
                                         </div>
                                     </div>
@@ -227,15 +225,25 @@ export function InviteMemberModal({ isOpen, onClose, familyId, userId, familyNam
                                         {t("invites.expiresIn", { days: 7, defaultValue: "Válido por 7 dias" })}
                                     </p>
                                     <p className="mt-1 text-xs opacity-80">
-                                        {invite.maxUses === 1
-                                            ? t("invites.singleUse", {
-                                                defaultValue: "Pode ser usado 1 vez",
-                                            })
-                                            : t("invites.multipleUses", {
-                                                count: invite.maxUses,
-                                                defaultValue: `Pode ser usado até ${invite.maxUses} vezes`,
-                                            })}
+                                        {t("invites.availableSlots", {
+                                            used: invite.usedCount || 0,
+                                            total: invite.maxUses,
+                                            defaultValue: `${invite.usedCount || 0} de ${invite.maxUses} usos`
+                                        })}
                                     </p>
+                                    {availableSlots !== undefined && (
+                                        <p className="mt-1 text-xs opacity-80">
+                                            {availableSlots > 0
+                                                ? t("invites.slotsRemaining", {
+                                                    count: availableSlots,
+                                                    defaultValue: `${availableSlots} ${availableSlots === 1 ? 'vaga disponível' : 'vagas disponíveis'} no plano`
+                                                })
+                                                : t("invites.noSlots", {
+                                                    defaultValue: "Sem vagas disponíveis no plano"
+                                                })
+                                            }
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Actions */}

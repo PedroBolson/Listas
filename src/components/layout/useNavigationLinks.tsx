@@ -9,6 +9,7 @@ import {
 import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { useAuth } from "../../features/auth/useAuth";
+import { useFamily } from "../../hooks/useFamily";
 import { USER_ROLE, type UserRole } from "../../domain/models";
 
 export interface NavigationItem {
@@ -21,8 +22,15 @@ export interface NavigationItem {
 export function useNavigationLinks() {
   const { domainUser } = useAuth();
   const { t } = useTranslation();
+  const currentFamilyId = domainUser?.managedFamilyId ?? null;
+  const { family } = useFamily(currentFamilyId);
 
   return useMemo<NavigationItem[]>(() => {
+    if (!domainUser) return [];
+
+    // Verifica se pode gerenciar a família atual usando o FamilyRecord REAL
+    const canManageCurrentFamily = domainUser.canManageFamilyFromRecord(family);
+
     const base: NavigationItem[] = [
       {
         to: "/",
@@ -56,8 +64,17 @@ export function useNavigationLinks() {
 
     return base.filter((link) => {
       if (!link.roles || link.roles.length === 0) return true;
-      if (!domainUser) return false;
+
+      // Master sempre vê tudo
+      if (domainUser.isMaster) return true;
+
+      // Para Family e Billing, verifica se pode gerenciar a família ATUAL
+      if (link.to === "/family" || link.to === "/billing") {
+        return canManageCurrentFamily;
+      }
+
+      // Para outras rotas com roles, verifica role global
       return link.roles.includes(domainUser.role);
     });
-  }, [domainUser, t]);
+  }, [domainUser, family, t]);
 }

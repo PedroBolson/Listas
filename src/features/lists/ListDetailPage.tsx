@@ -44,8 +44,10 @@ export function ListDetailPage() {
     const { list, loading: listLoading } = useList(familyId, listId ?? null);
     const { items, loading: itemsLoading } = useListItems(familyId, listId ?? null);
 
+    // Se tem acesso à lista (owner, master ou está em collaborators), pode fazer TUDO
     const isOwner = list?.ownerId === domainUser?.id;
-    const canEdit = isOwner || domainUser?.isMaster;
+    const isCollaborator = list?.collaborators.includes(domainUser?.id ?? '');
+    const canEdit = isOwner || isCollaborator || domainUser?.isMaster;
 
     // Fetch user names for items
     useEffect(() => {
@@ -72,7 +74,7 @@ export function ListDetailPage() {
     }, [items]);
 
     const handleAddItem = async () => {
-        if (!newItemName.trim() || !familyId || !listId || !domainUser) return;
+        if (!newItemName.trim() || !familyId || !listId || !domainUser || !canEdit) return;
 
         setAdding(true);
         try {
@@ -103,7 +105,7 @@ export function ListDetailPage() {
     };
 
     const handleToggleItem = async (itemId: string, checked: boolean) => {
-        if (!familyId || !listId || !domainUser) return;
+        if (!familyId || !listId || !domainUser || !canEdit) return;
         try {
             await toggleListItem(familyId, listId, itemId, !checked, domainUser.id);
         } catch (error) {
@@ -292,7 +294,8 @@ export function ListDetailPage() {
                         </div>
                     </div>
                 </div>
-                {canEdit && (
+                {/* Apenas owner pode gerenciar membros, editar lista e acessar menu */}
+                {isOwner && (
                     <div className="flex shrink-0 gap-2">
                         <Button
                             variant="ghost"

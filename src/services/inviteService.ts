@@ -98,8 +98,8 @@ export async function createInvite(
     }
 
     // Calcular maxUses = slots disponíveis no plano
-    const totalSlots = user.billing.seats.total;
-    const usedSlots = user.billing.seats.used;
+    const totalSlots = user.billing.seats?.total ?? 0;
+    const usedSlots = user.billing.seats?.used ?? 0;
     const maxUses = Math.max(0, totalSlots - usedSlots);
 
     if (maxUses === 0) {

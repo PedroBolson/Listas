@@ -109,29 +109,16 @@ export function ManageListMembersModal({ list, isOpen, onClose, onSuccess }: Man
             // Remove membro
             newPermissions.delete(userId);
         } else {
-            // Adiciona membro com permissões padrão
+            // Adiciona membro com TODAS as permissões (simplificado)
             newPermissions.set(userId, {
                 userId,
                 canCreateItems: true,
                 canToggleItems: true,
-                canDeleteItems: false,
+                canDeleteItems: true, // Agora sempre true
             });
         }
 
         setLocalPermissions(newPermissions);
-    };
-
-    const updatePermission = (userId: string, field: keyof Omit<PermissionRule, "userId">, value: boolean) => {
-        const newPermissions = new Map(localPermissions);
-        const current = newPermissions.get(userId);
-
-        if (current) {
-            newPermissions.set(userId, {
-                ...current,
-                [field]: value,
-            });
-            setLocalPermissions(newPermissions);
-        }
     };
 
     const handleSave = async () => {
@@ -205,7 +192,6 @@ export function ManageListMembersModal({ list, isOpen, onClose, onSuccess }: Man
                             ) : (
                                 availableMembers.map((member) => {
                                     const isSelected = localPermissions.has(member.userId);
-                                    const permissions = localPermissions.get(member.userId);
 
                                     return (
                                         <Card
@@ -218,8 +204,8 @@ export function ManageListMembersModal({ list, isOpen, onClose, onSuccess }: Man
                                                 <button
                                                     onClick={() => toggleMember(member.userId)}
                                                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 transition-all ${isSelected
-                                                            ? "border-brand bg-brand text-white"
-                                                            : "border-soft bg-surface text-muted hover:border-brand/50"
+                                                        ? "border-brand bg-brand text-white"
+                                                        : "border-soft bg-surface text-muted hover:border-brand/50"
                                                         }`}
                                                 >
                                                     {isSelected ? <Check className="h-5 w-5" /> : <UserPlus className="h-5 w-5" />}
@@ -242,47 +228,13 @@ export function ManageListMembersModal({ list, isOpen, onClose, onSuccess }: Man
                                                         </div>
                                                     </div>
 
-                                                    {isSelected && permissions && (
-                                                        <div className="mt-3 space-y-2 border-t border-soft pt-3">
-                                                            <label className="flex items-center gap-2">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={permissions.canCreateItems}
-                                                                    onChange={(e) =>
-                                                                        updatePermission(member.userId, "canCreateItems", e.target.checked)
-                                                                    }
-                                                                    className="h-4 w-4 rounded border-soft text-brand focus:ring-2 focus:ring-brand/20"
-                                                                />
-                                                                <span className="text-sm text-default">
-                                                                    {t("lists.share.canCreate", { defaultValue: "Pode adicionar itens" })}
-                                                                </span>
-                                                            </label>
-                                                            <label className="flex items-center gap-2">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={permissions.canToggleItems}
-                                                                    onChange={(e) =>
-                                                                        updatePermission(member.userId, "canToggleItems", e.target.checked)
-                                                                    }
-                                                                    className="h-4 w-4 rounded border-soft text-brand focus:ring-2 focus:ring-brand/20"
-                                                                />
-                                                                <span className="text-sm text-default">
-                                                                    {t("lists.share.canToggle", { defaultValue: "Pode marcar como comprado" })}
-                                                                </span>
-                                                            </label>
-                                                            <label className="flex items-center gap-2">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={permissions.canDeleteItems}
-                                                                    onChange={(e) =>
-                                                                        updatePermission(member.userId, "canDeleteItems", e.target.checked)
-                                                                    }
-                                                                    className="h-4 w-4 rounded border-soft text-brand focus:ring-2 focus:ring-brand/20"
-                                                                />
-                                                                <span className="text-sm text-default">
-                                                                    {t("lists.share.canDelete", { defaultValue: "Pode remover itens" })}
-                                                                </span>
-                                                            </label>
+                                                    {isSelected && (
+                                                        <div className="mt-3 border-t border-soft pt-3">
+                                                            <p className="text-xs text-muted">
+                                                                {t("lists.share.fullAccess", {
+                                                                    defaultValue: "Com acesso total: pode adicionar, marcar e remover itens"
+                                                                })}
+                                                            </p>
                                                         </div>
                                                     )}
                                                 </div>

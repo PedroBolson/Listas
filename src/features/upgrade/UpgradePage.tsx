@@ -8,13 +8,18 @@ import { Button } from "../../components/ui/Button";
 import { Spinner } from "../../components/ui/Spinner";
 import { upgradeToTitular } from "../../services/userService";
 import { useAuth } from "../auth/useAuth";
+import { usePlans } from "../../providers/usePlans";
 
 export function UpgradePage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { domainUser } = useAuth();
+    const { domainUser, refreshProfile } = useAuth();
+    const { getPlan } = usePlans();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Busca o plano free
+    const freePlan = getPlan("free");
 
     const handleUpgrade = async () => {
         if (!domainUser) return;
@@ -26,6 +31,8 @@ export function UpgradePage() {
             const result = await upgradeToTitular("free");
 
             if (result.success) {
+                // Atualiza o perfil do usuário em tempo real
+                await refreshProfile();
                 // Navega para o dashboard após sucesso
                 navigate("/dashboard");
             } else {
@@ -147,15 +154,15 @@ export function UpgradePage() {
                     <ul className="space-y-3">
                         <li className="flex items-center gap-3 text-sm text-secondary">
                             <CheckCircle2 className="h-5 w-5 shrink-0 text-brand" />
-                            <span>{t("upgrade.plan.free.features.lists", { defaultValue: "Até 10 listas" })}</span>
+                            <span>Até {freePlan?.limits.listsPerFamily || 3} listas</span>
                         </li>
                         <li className="flex items-center gap-3 text-sm text-secondary">
                             <CheckCircle2 className="h-5 w-5 shrink-0 text-brand" />
-                            <span>{t("upgrade.plan.free.features.members", { defaultValue: "Até 5 membros" })}</span>
+                            <span>Até {freePlan?.limits.familyMembers || 3} membros</span>
                         </li>
                         <li className="flex items-center gap-3 text-sm text-secondary">
                             <CheckCircle2 className="h-5 w-5 shrink-0 text-brand" />
-                            <span>{t("upgrade.plan.free.features.items", { defaultValue: "Até 50 itens por lista" })}</span>
+                            <span>Até {freePlan?.limits.itemsPerList || 50} itens por lista</span>
                         </li>
                     </ul>
 
@@ -171,18 +178,12 @@ export function UpgradePage() {
                         className="w-full"
                         onClick={handleUpgrade}
                         disabled={loading}
+                        icon={loading ? <Spinner /> : <Sparkles className="h-5 w-5" />}
                     >
-                        {loading ? (
-                            <>
-                                <Spinner />
-                                {t("upgrade.button.loading", { defaultValue: "Processando..." })}
-                            </>
-                        ) : (
-                            <>
-                                <Sparkles className="h-5 w-5" />
-                                {t("upgrade.button.confirm", { defaultValue: "Confirmar Upgrade" })}
-                            </>
-                        )}
+                        {loading
+                            ? t("upgrade.button.loading", { defaultValue: "Processando..." })
+                            : t("upgrade.button.confirm", { defaultValue: "Confirmar Upgrade" })
+                        }
                     </Button>
 
                     <p className="text-center text-xs text-muted">

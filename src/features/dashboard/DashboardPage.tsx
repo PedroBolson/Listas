@@ -207,9 +207,8 @@ export function DashboardPage() {
             </p>
           </div>
           <Link to="/lists">
-            <Button variant="ghost" className="gap-2">
-              {t("actions.viewAll", { defaultValue: "Ver todas" })}
-              <ArrowRight className="h-4 w-4" />
+            <Button variant="ghost" trailingIcon={<ArrowRight className="h-4 w-4" />}>
+              {t("actions.viewAll", { defaultValue: "Ver tudo" })}
             </Button>
           </Link>
         </div>
@@ -246,11 +245,11 @@ export function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted">
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-xs text-muted whitespace-nowrap">
                       {list.collaborators?.length || 0} {t("common.members", { defaultValue: "membros" })}
                     </span>
-                    <ArrowRight className="h-4 w-4 text-muted" />
+                    <ArrowRight className="h-4 w-4 text-muted shrink-0" />
                   </div>
                 </div>
               </Link>

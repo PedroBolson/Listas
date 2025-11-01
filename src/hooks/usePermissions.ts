@@ -77,7 +77,7 @@ export function usePermissions() {
         }
 
         const limit = currentPlan.limits.familyMembers;
-        const current = domainUser.billing.seats.used;
+        const current = domainUser.billing.seats?.used ?? 0;
 
         if (currentPlan.isUnlimited) {
             return { allowed: true };

@@ -303,13 +303,44 @@ export class DomainUser {
     return this.props.families.some((family) => family.familyId === familyId && !family.removedAt);
   }
 
+  /**
+   * Verifica se pode gerenciar família
+   * ATENÇÃO: Este método retorna apenas estimativa baseada em primaryFamilyId
+   * Para verificação precisa, use canManageFamilyFromRecord com o FamilyRecord
+   */
   canManageFamily(familyId: string) {
     if (this.isMaster) return true;
     if (!this.isActive) return false;
-    return this.isTitular && this.managedFamilyId === familyId;
+
+    // Verificação básica por primaryFamilyId
+    return this.props.primaryFamilyId === familyId;
   }
 
-  canManageList(list: ListRecord) {
+  /**
+   * Verifica se pode gerenciar família usando o documento real da família
+   * USAR ESTE MÉTODO para verificação precisa!
+   */
+  canManageFamilyFromRecord(family: FamilyRecord | null) {
+    if (!family) return false;
+    if (this.isMaster) return true;
+    if (!this.isActive) return false;
+
+    // Verifica se é o dono da família
+    if (family.ownerId === this.id) {
+      return true;
+    }
+
+    // Verifica o role específico no members da família
+    const memberInfo = family.members[this.id];
+    if (!memberInfo) {
+      return false;
+    }
+
+    const isOwnerRole = memberInfo.role === "owner" || memberInfo.role === "titular";
+    const isActive = memberInfo.status === "active";
+
+    return isOwnerRole && isActive;
+  } canManageList(list: ListRecord) {
     if (this.isMaster) return true;
     if (list.ownerId === this.id) return true;
     if (!this.isActive) return false;

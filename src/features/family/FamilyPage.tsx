@@ -37,17 +37,19 @@ export function FamilyPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
 
-  const primaryFamilyId = domainUser?.props.primaryFamilyId ?? null;
-  const { family, loading } = useFamily(primaryFamilyId);
+  // Usa managedFamilyId (família atual selecionada) ao invés de primaryFamilyId
+  const currentFamilyId = domainUser?.managedFamilyId ?? null;
+  const { family, loading } = useFamily(currentFamilyId);
   const { canInviteMember } = usePermissions();
 
-  const canManage = domainUser?.isTitular || domainUser?.isMaster;
+  // Verifica se pode gerenciar a família ATUAL usando o FamilyRecord REAL
+  const canManage = domainUser?.canManageFamilyFromRecord(family) ?? false;
 
   // Calcular slots disponíveis
   const availableSlots = useMemo(() => {
     if (!domainUser?.billing?.seats) return 0;
-    const total = domainUser.billing.seats.total ?? 0;
-    const used = domainUser.billing.seats.used ?? 0;
+    const total = domainUser.billing.seats?.total ?? 0;
+    const used = domainUser.billing.seats?.used ?? 0;
     return Math.max(0, total - used);
   }, [domainUser]);
 
@@ -119,7 +121,7 @@ export function FamilyPage() {
   }, [family, members]);
 
   const handleRemoveMember = async (userId: string) => {
-    if (!primaryFamilyId || !canManage) return;
+    if (!currentFamilyId || !canManage) return;
     if (
       !confirm(
         t("family.confirmRemove", {
@@ -131,7 +133,7 @@ export function FamilyPage() {
 
     setRemoving(userId);
     try {
-      await removeFamilyMember(primaryFamilyId, userId);
+      await removeFamilyMember(currentFamilyId, userId);
     } catch (error) {
       console.error("Erro ao remover membro:", error);
       alert(

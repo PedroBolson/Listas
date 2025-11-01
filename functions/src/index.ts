@@ -270,13 +270,35 @@ export const upgradeToTitular = onCall<UpgradeToTitularData>(
 
             logger.info("✅ [FUNCTION] Nova família criada", { familyId });
 
-            // 5. Define os limites baseado no plano
-            let seats = { total: 5, used: 1 }; // Free plan default
-            if (planId === "basic") {
-                seats = { total: 10, used: 1 };
-            } else if (planId === "premium") {
-                seats = { total: 999, used: 1 };
+            // 5. Busca os limites do plano no Firestore
+            logger.info("🔍 [DEBUG] Buscando plano", { planId });
+
+            const planDoc = await db.collection("plans")
+                .where("tier", "==", planId)
+                .limit(1)
+                .get();
+
+            logger.info("📋 [DEBUG] Resultado busca plano", {
+                empty: planDoc.empty,
+                size: planDoc.size
+            });
+
+            let seats = { total: 3, used: 1 }; // Fallback para free
+
+            if (!planDoc.empty) {
+                const planData = planDoc.docs[0].data();
+                const familyMembersLimit = planData.limits?.familyMembers || 3;
+                seats = { total: familyMembersLimit, used: 1 };
+                logger.info("✅ [DEBUG] Seats calculado do plano", {
+                    docId: planDoc.docs[0].id,
+                    familyMembersLimit,
+                    seats
+                });
+            } else {
+                logger.warn("⚠️ [DEBUG] Usando fallback seats", { seats });
             }
+
+            logger.info("💾 [DEBUG] Seats final que será salvo", { seats });
 
             // 6. Atualiza o usuário para titular
             const updatedUser = {
