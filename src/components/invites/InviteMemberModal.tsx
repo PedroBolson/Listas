@@ -199,13 +199,13 @@ export function InviteMemberModal({ isOpen, onClose, familyId, userId, familyNam
                                             <div className="mb-2 text-4xl font-bold tracking-wider text-brand">
                                                 {invite.code}
                                             </div>
-                                            <Button 
-                                                onClick={handleCopyCode} 
-                                                variant="ghost" 
+                                            <Button
+                                                onClick={handleCopyCode}
+                                                variant="ghost"
                                                 size="sm"
                                                 icon={copiedCode ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                                             >
-                                                {copiedCode 
+                                                {copiedCode
                                                     ? t("invites.copied", { defaultValue: "Copiado!" })
                                                     : t("invites.copyCode", { defaultValue: "Copiar código" })
                                                 }
