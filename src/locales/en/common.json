@@ -178,8 +178,8 @@
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Welcome back, {{name}}",
-    "memberTitle": "My Lists",
-    "memberSubtitle": "{{familyName}}",
+    "memberTitle": "Welcome, {{name}}",
+    "memberSubtitle": "You are part of {{familyName}}",
     "sharedLists": "Shared Lists",
     "sharedListsHint": "Lists that have been shared with you",
     "welcomeMaster": "Master control center",

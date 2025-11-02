@@ -33,7 +33,7 @@ export function useNavigationLinks() {
 
     const base: NavigationItem[] = [
       {
-        to: "/",
+        to: "/dashboard",
         icon: <LayoutDashboard className="h-4 w-4" />,
         label: t("navigation.dashboard"),
       },

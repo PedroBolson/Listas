@@ -41,17 +41,7 @@ export function DashboardPage() {
     if (family.ownerId === domainUser.id) return false;
     // Verifica o role na família atual
     const memberData = family.members[domainUser.id];
-    const isViewer = memberData?.role === 'viewer';
-
-    console.log('🔍 Dashboard - isViewerOfCurrentFamily:', {
-      familyId: family.id,
-      familyOwnerId: family.ownerId,
-      userId: domainUser.id,
-      memberRole: memberData?.role,
-      isViewer
-    });
-
-    return isViewer;
+    return memberData?.role === 'viewer';
   }, [family, domainUser]);
 
   const stats = useMemo(() => {
@@ -121,7 +111,10 @@ export function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold text-primary">
             {isViewerOfCurrentFamily
-              ? t("dashboard.memberTitle", { defaultValue: "Minhas Listas" })
+              ? t("dashboard.memberTitle", {
+                defaultValue: "Minhas Listas",
+                name: domainUser?.displayName?.split(' ')[0] || "Usuário"
+              })
               : t("dashboard.title", { defaultValue: "Dashboard" })
             }
           </h1>
@@ -251,22 +244,22 @@ export function DashboardPage() {
                 to={`/lists/${list.id}`}
                 className="block rounded-2xl border border-soft bg-surface-alt p-4 transition hover:border-brand hover:bg-elevated"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-soft text-brand">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand">
                       <ClipboardList className="h-5 w-5" />
                     </div>
-                    <div>
-                      <p className="font-medium text-primary">{list.name}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-primary">{list.name}</p>
                       {list.description && (
-                        <p className="hidden text-xs text-muted sm:block">
+                        <p className="hidden truncate text-xs text-muted sm:block">
                           {list.description}
                         </p>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-xs text-muted whitespace-nowrap">
+                  <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                    <span className="hidden text-xs text-muted whitespace-nowrap sm:inline">
                       {list.collaborators?.length || 0} {t("common.members", { defaultValue: "membros" })}
                     </span>
                     <ArrowRight className="h-4 w-4 text-muted shrink-0" />

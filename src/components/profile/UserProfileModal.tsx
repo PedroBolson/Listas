@@ -88,11 +88,9 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                     if (oldPhotoPath) {
                         const oldPhotoRef = ref(storage, oldPhotoPath);
                         await deleteObject(oldPhotoRef);
-                        console.log("✅ Foto antiga deletada:", oldPhotoPath);
                     }
                 } catch (error) {
                     // Ignorar erro se a foto antiga não existir
-                    console.log("ℹ️ Não foi possível deletar foto antiga (pode não existir):", error);
                 }
             }
 

@@ -152,10 +152,9 @@ export function FamilyPage() {
     setShowJoinModal(true);
   };
 
-  const handleJoinSuccess = (familyId: string, familyName: string) => {
+  const handleJoinSuccess = () => {
     // Atualizar para a nova família
     // O AuthProvider vai recarregar automaticamente
-    console.log(`Joined family: ${familyId} - ${familyName}`);
     // Opcional: Trocar para a nova família
     // navigate('/dashboard');
   };

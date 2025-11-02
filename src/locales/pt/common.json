@@ -179,8 +179,8 @@
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Bem-vindo de volta, {{name}}",
-    "memberTitle": "Minhas Listas",
-    "memberSubtitle": "{{familyName}}",
+    "memberTitle": "Bem-vindo, {{name}}",
+    "memberSubtitle": "Você faz parte da {{familyName}}",
     "sharedLists": "Listas Compartilhadas",
     "sharedListsHint": "Listas que foram compartilhadas com você",
     "welcomeMaster": "Central de controle master",

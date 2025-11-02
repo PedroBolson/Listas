@@ -38,11 +38,10 @@ export function InviteMemberModal({ isOpen, onClose, familyId, userId, familyNam
     const handleGenerate = async () => {
         try {
             // Se já tem um convite ativo, revogar antes de criar novo
-            if (invite && invite.status === "pending") {
-                console.log('🔄 Revogando convite anterior:', invite.id);
-                // TODO: Adicionar função revokeInvite() se quiser revogar o antigo
-                // Por enquanto, só cria um novo (o antigo continua válido)
-            }
+            // if (invite && invite.status === "pending") {
+            //     TODO: Adicionar função revokeInvite() se quiser revogar o antigo
+            //     Por enquanto, só cria um novo (o antigo continua válido)
+            // }
 
             const newInvite = await createInvite(7); // 7 dias
             setInvite(newInvite);

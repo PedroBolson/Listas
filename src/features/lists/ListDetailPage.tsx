@@ -12,6 +12,8 @@ import { useList, useListItems } from "../../hooks/useLists";
 import { createListItem, toggleListItem, deleteListItem, deleteList } from "../../services/listService";
 import { getUserById } from "../../services/userService";
 import { ManageListMembersModal } from "../../components/lists/ManageListMembersModal";
+import { UserProfileViewModal } from "../../components/profile/UserProfileViewModal";
+import type { DomainUserProps } from "../../domain/models";
 
 export function ListDetailPage() {
     const { listId } = useParams<{ listId: string }>();
@@ -41,6 +43,8 @@ export function ListDetailPage() {
     });
     const [isDeleting, setIsDeleting] = useState(false);
     const [showManageMembersModal, setShowManageMembersModal] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<DomainUserProps | null>(null);
+    const [showUserProfileModal, setShowUserProfileModal] = useState(false);
 
     const familyId = domainUser?.managedFamilyId ?? null;
     const { list, loading: listLoading } = useList(familyId, listId ?? null);
@@ -291,25 +295,47 @@ export function ListDetailPage() {
                             <div className="flex -space-x-2">
                                 {/* Owner sempre aparece primeiro */}
                                 {list.ownerId && (
-                                    <Avatar
+                                    <button
                                         key={list.ownerId}
-                                        src={userAvatars[list.ownerId]}
-                                        fallback={userNames[list.ownerId]?.[0]}
-                                        size="sm"
-                                        className="ring-2 ring-surface"
-                                        title={`${userNames[list.ownerId]} (titular)`}
-                                    />
+                                        onClick={async () => {
+                                            const user = await getUserById(list.ownerId);
+                                            if (user) {
+                                                setSelectedUser(user);
+                                                setShowUserProfileModal(true);
+                                            }
+                                        }}
+                                        className="transition hover:z-10 hover:scale-110"
+                                    >
+                                        <Avatar
+                                            src={userAvatars[list.ownerId]}
+                                            fallback={userNames[list.ownerId]?.[0]}
+                                            size="sm"
+                                            className="ring-2 ring-surface"
+                                            title={`${userNames[list.ownerId]} (titular)`}
+                                        />
+                                    </button>
                                 )}
                                 {/* Colaboradores (até 3) */}
                                 {list.collaborators?.slice(0, 3).map((userId) => (
-                                    <Avatar
+                                    <button
                                         key={userId}
-                                        src={userAvatars[userId]}
-                                        fallback={userNames[userId]?.[0]}
-                                        size="sm"
-                                        className="ring-2 ring-surface"
-                                        title={userNames[userId]}
-                                    />
+                                        onClick={async () => {
+                                            const user = await getUserById(userId);
+                                            if (user) {
+                                                setSelectedUser(user);
+                                                setShowUserProfileModal(true);
+                                            }
+                                        }}
+                                        className="transition hover:z-10 hover:scale-110"
+                                    >
+                                        <Avatar
+                                            src={userAvatars[userId]}
+                                            fallback={userNames[userId]?.[0]}
+                                            size="sm"
+                                            className="ring-2 ring-surface"
+                                            title={userNames[userId]}
+                                        />
+                                    </button>
                                 ))}
                                 {/* Indicador de mais membros */}
                                 {list.collaborators && list.collaborators.length > 3 && (
@@ -720,6 +746,16 @@ export function ListDetailPage() {
                     }}
                 />
             )}
+
+            {/* User Profile View Modal */}
+            <UserProfileViewModal
+                isOpen={showUserProfileModal}
+                onClose={() => {
+                    setShowUserProfileModal(false);
+                    setSelectedUser(null);
+                }}
+                user={selectedUser}
+            />
         </motion.div>
     );
 }

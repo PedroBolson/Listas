@@ -124,11 +124,11 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
                                                         primaryFamilyId: family.familyId,
                                                     });
 
-                                                    // Aguarda mais um pouco antes de recarregar
+                                                    // Aguarda mais um pouco antes de redirecionar
                                                     await new Promise(resolve => setTimeout(resolve, 300));
 
-                                                    // Recarrega a página para atualizar todos os dados
-                                                    window.location.reload();
+                                                    // Redireciona para o dashboard (evita ficar em páginas de outra família)
+                                                    window.location.href = "/dashboard";
                                                 } catch (error) {
                                                     console.error("❌ Erro ao trocar família:", error);
                                                     setSwitching(false);
