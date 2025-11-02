@@ -23,6 +23,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploadSuccess, setUploadSuccess] = useState(false);
     const [familyOwnerName, setFamilyOwnerName] = useState<string | null>(null);
+    const [photoTimestamp, setPhotoTimestamp] = useState<number>(Date.now());
 
     // Buscar nome do titular da família atual
     useEffect(() => {
@@ -107,6 +108,9 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
             // Atualizar contexto
             await refreshProfile();
 
+            // Atualizar timestamp para forçar reload apenas quando houver novo upload
+            setPhotoTimestamp(Date.now());
+
             // Limpar preview após um delay para garantir que o novo URL foi carregado
             setTimeout(() => {
                 URL.revokeObjectURL(localPreview);
@@ -173,7 +177,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                                     <div className="flex flex-col items-center gap-4">
                                         <div className="relative">
                                             <Avatar
-                                                src={previewUrl || (domainUser.photoURL ? `${domainUser.photoURL}?t=${Date.now()}` : null)}
+                                                src={previewUrl || (domainUser.photoURL ? `${domainUser.photoURL}?t=${photoTimestamp}` : null)}
                                                 fallback={domainUser.displayName?.[0] || "U"}
                                                 size="xl"
                                                 className="ring-4 ring-brand/20"

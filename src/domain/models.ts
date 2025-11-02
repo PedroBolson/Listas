@@ -284,7 +284,8 @@ export class DomainUser {
   }
 
   get isTitular() {
-    return this.props.role === USER_ROLE.TITULAR;
+    // Master tem todos os privilégios de titular + mais
+    return this.props.role === USER_ROLE.TITULAR || this.props.role === USER_ROLE.MASTER;
   }
 
   get isFamilyMemberOnly() {
@@ -292,7 +293,7 @@ export class DomainUser {
   }
 
   get managedFamilyId() {
-    if (this.isMaster) return undefined;
+    // Master também pode ter uma família ativa para trabalhar
     if (this.props.primaryFamilyId) return this.props.primaryFamilyId;
 
     const activeFamily = this.props.families.find((family) => !family.removedAt);

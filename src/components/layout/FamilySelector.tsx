@@ -48,12 +48,12 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
         fetchUserFamilies();
     }, [domainUser?.id]);
 
-    // Usuário Titular pode criar múltiplas famílias se tiver plano premium ou master
+    // Apenas Master pode criar múltiplas famílias
     const planId = domainUser?.billing?.planId;
-    const canHaveMultipleFamilies = domainUser?.isTitular && (planId === "premium" || planId === "master");
+    const canHaveMultipleFamilies = domainUser?.isTitular && planId === "master";
 
-    // Verificar se atingiu o limite de famílias
-    const maxFamilies = planId === "master" ? Infinity : planId === "premium" ? 3 : 1;
+    // Verificar se atingiu o limite de famílias (apenas Master tem ilimitado)
+    const maxFamilies = planId === "master" ? Infinity : 1;
     const canCreateMore = userFamilies.length < maxFamilies;
 
     // SEMPRE mostrar se tiver mais de 1 família (independente do role)
