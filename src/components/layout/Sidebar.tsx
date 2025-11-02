@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
 import { cn } from "../../utils/cn";
 import { useNavigationLinks } from "./useNavigationLinks";
 
@@ -19,22 +20,33 @@ export function Sidebar() {
             <span className="text-xs text-muted">Household & Business OS</span>
           </div>
         </div>
-        <nav className="flex flex-col gap-2">
+        <nav className="relative flex flex-col gap-2">
           {links.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
-              className={({ isActive }) =>
-                cn(
-                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-brand text-white shadow-soft"
-                    : "text-secondary hover:bg-brand-soft hover:text-brand",
-                )
-              }
             >
-              {link.icon}
-              <span>{link.label}</span>
+              {({ isActive }) => (
+                <div className="relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors">
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-bubble"
+                      className="absolute inset-0 rounded-2xl bg-brand shadow-lg shadow-brand/30"
+                      transition={{
+                        type: "spring",
+                        stiffness: 350,
+                        damping: 30,
+                      }}
+                    />
+                  )}
+                  <span className={cn("relative z-10", isActive ? "text-white" : "text-secondary")}>
+                    {link.icon}
+                  </span>
+                  <span className={cn("relative z-10", isActive ? "text-white" : "text-secondary")}>
+                    {link.label}
+                  </span>
+                </div>
+              )}
             </NavLink>
           ))}
         </nav>
