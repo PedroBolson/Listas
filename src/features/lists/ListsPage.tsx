@@ -107,7 +107,7 @@ export function ListsPage() {
                 : t("lists.emptyHint", { defaultValue: "Crie sua primeira lista para começar" })}
             </p>
             {!searchTerm && (domainUser?.isTitular || domainUser?.isMaster) && (
-              <Button onClick={handleCreateList} icon={<Plus className="h-5 w-5" />} className="mt-6">
+              <Button onClick={handleCreateList} icon={<Plus className="h-5 w-5" />} className="mt-6 whitespace-nowrap">
                 {t("actions.createList", { defaultValue: "Criar nova lista" })}
               </Button>
             )}

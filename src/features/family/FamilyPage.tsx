@@ -223,6 +223,7 @@ export function FamilyPage() {
                 handleInviteMember();
               }}
               icon={<UserPlus className="size-4" />}
+              className="whitespace-nowrap"
             >
               {t("family.inviteMember", { defaultValue: "Convidar Membro" })}
             </Button>
@@ -231,6 +232,7 @@ export function FamilyPage() {
             onClick={handleJoinFamily}
             variant="outline"
             icon={<UserPlus className="size-4" />}
+            className="whitespace-nowrap"
           >
             {t("invites.joinFamily", { defaultValue: "Participar de outra família" })}
           </Button>

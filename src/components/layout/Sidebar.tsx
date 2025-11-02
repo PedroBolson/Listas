@@ -8,7 +8,7 @@ export function Sidebar() {
   const { t } = useTranslation();
 
   return (
-    <aside className="hidden h-full w-72 shrink-0 flex-col justify-between rounded-4xl border border-soft bg-surface p-6 shadow-soft/30 lg:flex">
+    <aside className="hidden h-full w-72 shrink-0 flex-col justify-between rounded-4xl border border-soft bg-surface p-6 shadow-soft/30 xl:flex">
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-3 rounded-2xl bg-brand-soft p-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-white text-lg font-semibold">

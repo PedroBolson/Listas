@@ -1,10 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Camera, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { storage } from "../../lib/firebase";
-import { updateUser } from "../../services/userService";
+import { updateUser, getUserById } from "../../services/userService";
 import { useAuth } from "../../features/auth/useAuth";
 import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
@@ -22,6 +22,41 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
     const [uploading, setUploading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploadSuccess, setUploadSuccess] = useState(false);
+    const [familyOwnerName, setFamilyOwnerName] = useState<string | null>(null);
+
+    // Buscar nome do titular da família atual
+    useEffect(() => {
+        const fetchFamilyOwner = async () => {
+            if (!domainUser?.managedFamilyId) {
+                setFamilyOwnerName(null);
+                return;
+            }
+
+            try {
+                const { getFamilyById } = await import("../../services/familyService");
+                const family = await getFamilyById(domainUser.managedFamilyId);
+
+                if (!family) {
+                    setFamilyOwnerName(null);
+                    return;
+                }
+
+                // Se é o próprio titular
+                if (family.ownerId === domainUser.id) {
+                    setFamilyOwnerName(domainUser.displayName || domainUser.email);
+                } else {
+                    // Buscar nome do titular
+                    const owner = await getUserById(family.ownerId);
+                    setFamilyOwnerName(owner?.displayName || owner?.email || "Titular");
+                }
+            } catch (error) {
+                console.error("Erro ao buscar titular da família:", error);
+                setFamilyOwnerName(null);
+            }
+        };
+
+        fetchFamilyOwner();
+    }, [domainUser?.managedFamilyId, domainUser?.id, domainUser?.displayName, domainUser?.email]);
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -204,23 +239,12 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
 
                                         <div>
                                             <label className="block text-xs font-medium text-muted">
-                                                {t("profile.role", { defaultValue: "Função" })}
+                                                {t("profile.currentFamily", { defaultValue: "Família atual" })}
                                             </label>
-                                            <p className="mt-1 text-sm capitalize text-secondary">
-                                                {t(`roles.${domainUser.role}`)}
+                                            <p className="mt-1 text-sm text-secondary">
+                                                {familyOwnerName ? `Família de ${familyOwnerName}` : "Carregando..."}
                                             </p>
                                         </div>
-
-                                        {domainUser.billing?.planId && (
-                                            <div>
-                                                <label className="block text-xs font-medium text-muted">
-                                                    {t("profile.plan", { defaultValue: "Plano" })}
-                                                </label>
-                                                <p className="mt-1 text-sm capitalize text-secondary">
-                                                    {domainUser.billing.planId}
-                                                </p>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 

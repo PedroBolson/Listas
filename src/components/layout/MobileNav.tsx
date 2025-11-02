@@ -6,7 +6,7 @@ export function MobileNav() {
   const links = useNavigationLinks();
 
   return (
-    <nav className="fixed inset-x-4 bottom-4 z-40 flex items-center justify-around gap-2 rounded-3xl border border-soft bg-surface/80 p-2 shadow-soft/40 backdrop-blur lg:hidden">
+    <nav className="fixed inset-x-4 bottom-4 z-40 flex items-center justify-around gap-2 rounded-3xl border border-soft bg-surface/80 p-2 shadow-soft/40 backdrop-blur xl:hidden">
       {links.map((link) => (
         <NavLink
           key={link.to}

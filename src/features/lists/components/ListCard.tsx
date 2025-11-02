@@ -24,54 +24,63 @@ export function ListCard({ list, itemsCount = 0, completedCount = 0 }: ListCardP
         whileTap={{ scale: 0.98 }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
       >
-        <Card className="group cursor-pointer p-5 transition-all hover:shadow-lg">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-blue-500 p-2">
-                <ClipboardList className="size-5 text-white" />
+        <Card className="group cursor-pointer p-4 transition-all hover:shadow-lg xl:p-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            {/* Header */}
+            <div className="flex items-start gap-3 xl:flex-1">
+              <div className="rounded-lg bg-blue-500 p-2.5 xl:p-2">
+                <ClipboardList className="h-5 w-5 text-white xl:h-5 xl:w-5" />
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 xl:text-base">
                   {list.name}
                 </h3>
                 {list.description && (
-                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                  <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-400 line-clamp-2 xl:mt-1">
                     {list.description}
                   </p>
                 )}
-
-                <div className="mt-3 flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-                    <Clock className="size-4" />
-                    <span>{pendingCount} {t("lists.pending", { defaultValue: "pendentes" })}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                    <CheckCircle2 className="size-4" />
-                    <span>
-                      {completedCount} {list.type === "shopping"
-                        ? t("lists.purchased", { defaultValue: "comprados" }).toLowerCase()
-                        : t("lists.completed", { defaultValue: "concluídos" }).toLowerCase()
-                      }
-                    </span>
-                  </div>
-                </div>
-
-                {itemsCount > 0 && (
-                  <div className="mt-2">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                      <div
-                        className="h-full bg-linear-to-r from-blue-500 to-green-500 transition-all"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    <p className="mt-1 text-xs text-gray-500">
-                      {progress}% {t("lists.complete", { defaultValue: "completo" })}
-                    </p>
-                  </div>
-                )}
               </div>
+              <ChevronRight className="hidden h-5 w-5 shrink-0 text-gray-400 transition-transform group-hover:translate-x-1 xl:block" />
             </div>
-            <ChevronRight className="size-5 text-gray-400 transition-transform group-hover:translate-x-1" />
+
+            {/* Stats */}
+            <div className="flex flex-col gap-3 xl:flex-1 xl:gap-2">
+              <div className="flex items-center gap-4 text-sm xl:gap-3">
+                <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                  <Clock className="h-4 w-4 shrink-0" />
+                  <span className="whitespace-nowrap">{pendingCount} {t("lists.pending", { defaultValue: "pendentes" })}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span className="whitespace-nowrap">
+                    {completedCount} {list.type === "shopping"
+                      ? t("lists.purchased", { defaultValue: "comprados" }).toLowerCase()
+                      : t("lists.completed", { defaultValue: "concluídos" }).toLowerCase()
+                    }
+                  </span>
+                </div>
+              </div>
+
+              {itemsCount > 0 && (
+                <div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700 xl:h-1.5">
+                    <div
+                      className="h-full bg-linear-to-r from-blue-500 to-green-500 transition-all"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-xs text-gray-500 xl:mt-1">
+                    {progress}% {t("lists.complete", { defaultValue: "completo" })}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile ChevronRight */}
+            <div className="flex justify-end xl:hidden">
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            </div>
           </div>
         </Card>
       </motion.div>
