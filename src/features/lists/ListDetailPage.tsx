@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Trash2, Edit, Check, Users, MoreVertical, Package, Search, Eraser, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit, Check, Users, Package, Search, Eraser, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card } from "../../components/ui/Card";
@@ -51,13 +51,23 @@ export function ListDetailPage() {
     const isCollaborator = list?.collaborators.includes(domainUser?.id ?? '');
     const canEdit = isOwner || isCollaborator || domainUser?.isMaster;
 
-    // Fetch user names and avatars for items
+    // Fetch user names and avatars for items, collaborators, and owner
     useEffect(() => {
         const userIds = new Set<string>();
+
+        // Add users from items
         items.forEach((item) => {
             if (item.createdBy) userIds.add(item.createdBy);
             if (item.checkedBy) userIds.add(item.checkedBy);
         });
+
+        // Add collaborators and owner
+        if (list?.collaborators) {
+            list.collaborators.forEach((userId) => userIds.add(userId));
+        }
+        if (list?.ownerId) {
+            userIds.add(list.ownerId);
+        }
 
         const fetchUserData = async () => {
             const names: Record<string, string> = {};
@@ -76,7 +86,7 @@ export function ListDetailPage() {
         };
 
         fetchUserData();
-    }, [items]);
+    }, [items, list?.collaborators, list?.ownerId]);
 
     const handleAddItem = async () => {
         if (!newItemName.trim() || !familyId || !listId || !domainUser || !canEdit) return;
@@ -268,7 +278,7 @@ export function ListDetailPage() {
         >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-4">
-                    <Button variant="ghost" onClick={() => navigate(-1)} className="mt-1">
+                    <Button variant="ghost" onClick={() => navigate("/lists")} className="mt-1">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                     <div>
@@ -276,30 +286,64 @@ export function ListDetailPage() {
                         {list.description && (
                             <p className="mt-2 text-sm text-muted">{list.description}</p>
                         )}
-                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
-                            <span className="flex items-center gap-1">
-                                <Users className="h-4 w-4" />
-                                {list.collaborators?.length || 0} {t("general.members", { defaultValue: "membros" })}
-                            </span>
-                            <span>•</span>
-                            <span>
-                                {items.length} {t("lists.itemsCount", { defaultValue: "itens" })}
-                            </span>
-                            {items.length > 0 && (
-                                <>
-                                    <span>•</span>
-                                    <span>
-                                        {checkedItems.length} {list.type === "shopping"
-                                            ? t("lists.purchased", { defaultValue: "comprados" })
-                                            : t("lists.completed", { defaultValue: "concluídos" })
-                                        }
-                                    </span>
-                                </>
-                            )}
+                        <div className="mt-3 flex flex-col gap-2 text-xs text-muted">
+                            {/* Avatars dos membros com acesso */}
+                            <div className="flex -space-x-2">
+                                {/* Owner sempre aparece primeiro */}
+                                {list.ownerId && (
+                                    <Avatar
+                                        key={list.ownerId}
+                                        src={userAvatars[list.ownerId]}
+                                        fallback={userNames[list.ownerId]?.[0]}
+                                        size="sm"
+                                        className="ring-2 ring-surface"
+                                        title={`${userNames[list.ownerId]} (titular)`}
+                                    />
+                                )}
+                                {/* Colaboradores (até 3) */}
+                                {list.collaborators?.slice(0, 3).map((userId) => (
+                                    <Avatar
+                                        key={userId}
+                                        src={userAvatars[userId]}
+                                        fallback={userNames[userId]?.[0]}
+                                        size="sm"
+                                        className="ring-2 ring-surface"
+                                        title={userNames[userId]}
+                                    />
+                                ))}
+                                {/* Indicador de mais membros */}
+                                {list.collaborators && list.collaborators.length > 3 && (
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-alt text-xs font-medium text-muted ring-2 ring-surface">
+                                        +{list.collaborators.length - 3}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Textos em linha */}
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span>
+                                    {1 + (list.collaborators?.length || 0)} {t("general.members", { defaultValue: "membros" })}
+                                </span>
+                                <span>•</span>
+                                <span>
+                                    {items.length} {t("lists.itemsCount", { defaultValue: "itens" })}
+                                </span>
+                                {items.length > 0 && (
+                                    <>
+                                        <span>•</span>
+                                        <span>
+                                            {checkedItems.length} {list.type === "shopping"
+                                                ? t("lists.purchased", { defaultValue: "comprados" })
+                                                : t("lists.completed", { defaultValue: "concluídos" })
+                                            }
+                                        </span>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
-                {/* Apenas owner pode gerenciar membros, editar lista e acessar menu */}
+                {/* Apenas owner pode gerenciar membros e editar lista */}
                 {isOwner && (
                     <div className="flex shrink-0 gap-2">
                         <Button
@@ -314,11 +358,9 @@ export function ListDetailPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => navigate(`/lists/${listId}/edit`)}
+                            title={t("lists.edit", { defaultValue: "Editar lista" })}
                         >
                             <Edit className="h-5 w-5" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-5 w-5" />
                         </Button>
                     </div>
                 )}
@@ -326,7 +368,8 @@ export function ListDetailPage() {
 
             <Card padding="md" elevated>
                 <div className="space-y-3">
-                    <div className="flex flex-col gap-3 sm:flex-row">
+                    {/* Input principal com botão ao lado APENAS em desktop/tablet */}
+                    <div className="flex gap-3">
                         <input
                             type="text"
                             value={newItemName}
@@ -336,16 +379,17 @@ export function ListDetailPage() {
                             className="min-w-0 flex-1 rounded-xl border border-soft bg-surface-alt px-4 py-3 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/40"
                             disabled={adding}
                         />
-                        {/* Botão fica embaixo em mobile, ao lado em desktop */}
-                        <Button
-                            onClick={handleAddItem}
-                            disabled={!newItemName.trim() || adding}
-                            size="md"
-                            className="w-full shrink-0 sm:w-auto"
-                            icon={<Plus className="h-5 w-5" />}
-                        >
-                            {t("actions.add", { defaultValue: "Adicionar" })}
-                        </Button>
+                        {/* Botão para desktop/tablet (ao lado do input) - esconde no mobile */}
+                        <div className="hidden! shrink-0 md:block!">
+                            <Button
+                                onClick={handleAddItem}
+                                disabled={!newItemName.trim() || adding}
+                                size="md"
+                                icon={<Plus className="h-5 w-5" />}
+                            >
+                                {t("actions.add", { defaultValue: "Adicionar" })}
+                            </Button>
+                        </div>
                     </div>
 
                     {showAdvanced && (
@@ -374,6 +418,19 @@ export function ListDetailPage() {
                             />
                         </motion.div>
                     )}
+
+                    {/* Botão para mobile (embaixo de tudo) - esconde no desktop/tablet */}
+                    <div className="block! md:hidden!">
+                        <Button
+                            onClick={handleAddItem}
+                            disabled={!newItemName.trim() || adding}
+                            size="md"
+                            className="w-full"
+                            icon={<Plus className="h-5 w-5" />}
+                        >
+                            {t("actions.add", { defaultValue: "Adicionar" })}
+                        </Button>
+                    </div>
 
                     <button
                         onClick={() => setShowAdvanced(!showAdvanced)}
@@ -420,11 +477,7 @@ export function ListDetailPage() {
 
                             <div className="flex flex-wrap items-center gap-2">
                                 {/* Busca - disponível para todos */}
-                                <motion.div
-                                    initial={false}
-                                    animate={{ width: showSearch ? "100%" : "auto" }}
-                                    className="flex items-center gap-2 overflow-hidden sm:w-auto"
-                                >
+                                <div className="flex items-center gap-2">
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -440,17 +493,19 @@ export function ListDetailPage() {
                                         {showSearch && (
                                             <motion.input
                                                 initial={{ opacity: 0, width: 0 }}
-                                                animate={{ opacity: 1, width: "auto" }}
+                                                animate={{ opacity: 1, width: "200px" }}
                                                 exit={{ opacity: 0, width: 0 }}
+                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                                 type="text"
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                 placeholder={t("lists.searchPlaceholder", { defaultValue: "Buscar..." })}
-                                                className="flex-1 rounded-lg border border-soft bg-surface px-3 py-1.5 text-sm outline-none transition focus:border-brand sm:w-40"
+                                                className="rounded-lg border border-soft bg-surface px-3 py-1.5 text-sm outline-none transition focus:border-brand"
+                                                autoFocus
                                             />
                                         )}
                                     </AnimatePresence>
-                                </motion.div>
+                                </div>
 
                                 {/* Deletar concluídos - disponível para todos */}
                                 {checkedItems.length > 0 && (

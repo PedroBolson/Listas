@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Users, Check, UserPlus } from "lucide-react";
+import { X, Users, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -52,29 +52,29 @@ export function ManageListMembersModal({ list, isOpen, onClose, onSuccess }: Man
 
             for (const [userId, member] of Object.entries(family.members)) {
                 if (member.status === "active" && userId !== list.ownerId) {
-                    // Preferir dados do profile na família
-                    if ((member as any).displayName) {
-                        const minimal: DomainUserProps = {
-                            id: userId,
-                            email: (member as any).email || "",
-                            displayName: (member as any).displayName || "",
-                            photoURL: null,
-                            locale: "pt",
-                            role: "member",
-                            status: "active",
-                            families: [],
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString(),
-                        };
-                        details.set(userId, minimal);
-                    } else {
-                        try {
-                            const userData = await getUserById(userId);
-                            if (userData) {
-                                details.set(userId, userData);
-                            }
-                        } catch (error) {
-                            console.error(`Erro ao buscar usuário ${userId}:`, error);
+                    try {
+                        // Sempre buscar dados completos do usuário para ter photoURL
+                        const userData = await getUserById(userId);
+                        if (userData) {
+                            details.set(userId, userData);
+                        }
+                    } catch (error) {
+                        console.error(`Erro ao buscar usuário ${userId}:`, error);
+                        // Fallback para dados da família se falhar
+                        if ((member as any).displayName) {
+                            const minimal: DomainUserProps = {
+                                id: userId,
+                                email: (member as any).email || "",
+                                displayName: (member as any).displayName || "",
+                                photoURL: null,
+                                locale: "pt",
+                                role: "member",
+                                status: "active",
+                                families: [],
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString(),
+                            };
+                            details.set(userId, minimal);
                         }
                     }
                 }
@@ -174,7 +174,7 @@ export function ManageListMembersModal({ list, isOpen, onClose, onSuccess }: Man
                         <div className="mb-6">
                             <p className="text-sm text-muted">
                                 {t("lists.share.description", {
-                                    defaultValue: "Selecione os membros da família que podem acessar esta lista e defina suas permissões."
+                                    defaultValue: "Selecione os membros da família que podem acessar esta lista. Todos os membros selecionados poderão adicionar, marcar e remover itens."
                                 })}
                             </p>
                         </div>
@@ -194,52 +194,35 @@ export function ManageListMembersModal({ list, isOpen, onClose, onSuccess }: Man
                                     const isSelected = localPermissions.has(member.userId);
 
                                     return (
-                                        <Card
+                                        <button
                                             key={member.userId}
-                                            padding="md"
-                                            className={`transition-all ${isSelected ? "ring-2 ring-brand" : ""
-                                                }`}
+                                            onClick={() => toggleMember(member.userId)}
+                                            className="flex w-full items-center gap-4 rounded-lg border border-soft bg-surface p-4 transition-all hover:bg-surface-hover"
                                         >
-                                            <div className="flex items-start gap-4">
-                                                <button
-                                                    onClick={() => toggleMember(member.userId)}
-                                                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 transition-all ${isSelected
-                                                        ? "border-brand bg-brand text-white"
-                                                        : "border-soft bg-surface text-muted hover:border-brand/50"
-                                                        }`}
-                                                >
-                                                    {isSelected ? <Check className="h-5 w-5" /> : <UserPlus className="h-5 w-5" />}
-                                                </button>
-
-                                                <div className="flex-1">
-                                                    <div className="mb-2 flex items-center gap-3">
-                                                        <Avatar
-                                                            src={member.userDetails?.photoURL}
-                                                            alt={member.userDetails?.displayName || member.userDetails?.email}
-                                                            size="sm"
-                                                        />
-                                                        <div>
-                                                            <p className="font-medium text-default">
-                                                                {member.userDetails?.displayName || "Membro"}
-                                                            </p>
-                                                            <p className="text-xs text-muted">
-                                                                {member.userDetails?.email}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    {isSelected && (
-                                                        <div className="mt-3 border-t border-soft pt-3">
-                                                            <p className="text-xs text-muted">
-                                                                {t("lists.share.fullAccess", {
-                                                                    defaultValue: "Com acesso total: pode adicionar, marcar e remover itens"
-                                                                })}
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                            <div
+                                                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded border-2 transition-all ${isSelected
+                                                    ? "border-brand bg-brand"
+                                                    : "border-muted bg-surface"
+                                                    }`}
+                                            >
+                                                {isSelected && <Check className="h-4 w-4 text-white" />}
                                             </div>
-                                        </Card>
+
+                                            <Avatar
+                                                src={member.userDetails?.photoURL}
+                                                fallback={member.userDetails?.displayName?.[0] || member.userDetails?.email?.[0]}
+                                                size="sm"
+                                            />
+
+                                            <div className="flex-1 text-left">
+                                                <p className="font-medium text-default">
+                                                    {member.userDetails?.displayName || "Membro"}
+                                                </p>
+                                                <p className="text-xs text-muted">
+                                                    {member.userDetails?.email}
+                                                </p>
+                                            </div>
+                                        </button>
                                     );
                                 })
                             )}

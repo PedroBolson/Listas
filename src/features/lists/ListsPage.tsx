@@ -81,9 +81,9 @@ export function ListsPage() {
       </Card>
 
       {loading ? (
-        <div className="grid gap-4 place-items-center sm:grid-cols-2 sm:place-items-stretch lg:grid-cols-3">
+        <div className="grid gap-4 place-items-center sm:grid-cols-2 sm:place-items-stretch xl:grid-cols-2">
           {[1, 2, 3].map((i) => (
-            <Card key={i} padding="lg" elevated className="w-full max-w-md">
+            <Card key={i} padding="lg" elevated className="w-full max-w-md sm:max-w-none">
               <div className="animate-pulse space-y-3">
                 <div className="h-6 w-3/4 rounded bg-surface-alt" />
                 <div className="h-4 w-full rounded bg-surface-alt" />
@@ -114,9 +114,9 @@ export function ListsPage() {
           </div>
         </Card>
       ) : (
-        <div className="grid gap-4 place-items-center sm:grid-cols-2 sm:place-items-stretch lg:grid-cols-3">
+        <div className="grid gap-4 place-items-center sm:grid-cols-2 sm:place-items-stretch xl:grid-cols-2 xl:gap-6">
           {filteredLists.map((list) => (
-            <div key={list.id} className="w-full max-w-md sm:max-w-none sm:w-full">
+            <div key={list.id} className="w-full max-w-md sm:max-w-none">
               <ListCardWithData list={list} />
             </div>
           ))}

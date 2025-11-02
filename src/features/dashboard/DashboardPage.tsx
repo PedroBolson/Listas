@@ -258,9 +258,11 @@ export function DashboardPage() {
                     </div>
                     <div>
                       <p className="font-medium text-primary">{list.name}</p>
-                      <p className="text-xs text-muted">
-                        {list.description || t("lists.noDescription", { defaultValue: "Sem descrição" })}
-                      </p>
+                      {list.description && (
+                        <p className="hidden text-xs text-muted sm:block">
+                          {list.description}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">

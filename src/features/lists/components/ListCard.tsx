@@ -24,29 +24,29 @@ export function ListCard({ list, itemsCount = 0, completedCount = 0 }: ListCardP
         whileTap={{ scale: 0.98 }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
       >
-        <Card className="group cursor-pointer p-4 transition-all hover:shadow-lg xl:p-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <Card className="group h-full cursor-pointer p-4 transition-all hover:shadow-lg xl:p-6">
+          <div className="flex h-full flex-col gap-4 xl:gap-5">
             {/* Header */}
-            <div className="flex items-start gap-3 xl:flex-1">
-              <div className="rounded-lg bg-blue-500 p-2.5 xl:p-2">
-                <ClipboardList className="h-5 w-5 text-white xl:h-5 xl:w-5" />
+            <div className="flex items-start gap-3">
+              <div className="rounded-lg bg-blue-500 p-2.5 xl:p-3">
+                <ClipboardList className="h-5 w-5 text-white xl:h-6 xl:w-6" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 xl:text-base">
+                <h3 className="text-base font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 xl:text-lg">
                   {list.name}
                 </h3>
                 {list.description && (
-                  <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-400 line-clamp-2 xl:mt-1">
+                  <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-400 line-clamp-2 xl:mt-2">
                     {list.description}
                   </p>
                 )}
               </div>
-              <ChevronRight className="hidden h-5 w-5 shrink-0 text-gray-400 transition-transform group-hover:translate-x-1 xl:block" />
+              <ChevronRight className="h-5 w-5 shrink-0 text-gray-400 transition-transform group-hover:translate-x-1" />
             </div>
 
             {/* Stats */}
-            <div className="flex flex-col gap-3 xl:flex-1 xl:gap-2">
-              <div className="flex items-center gap-4 text-sm xl:gap-3">
+            <div className="flex flex-col gap-3 xl:gap-2.5">
+              <div className="flex flex-wrap items-center gap-3 text-sm xl:gap-4">
                 <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
                   <Clock className="h-4 w-4 shrink-0" />
                   <span className="whitespace-nowrap">{pendingCount} {t("lists.pending", { defaultValue: "pendentes" })}</span>
@@ -70,17 +70,13 @@ export function ListCard({ list, itemsCount = 0, completedCount = 0 }: ListCardP
                       style={{ width: `${progress}%` }}
                     />
                   </div>
-                  <p className="mt-1.5 text-xs text-gray-500 xl:mt-1">
+                  <p className="mt-1.5 text-xs text-gray-500 xl:mt-2">
                     {progress}% {t("lists.complete", { defaultValue: "completo" })}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Mobile ChevronRight */}
-            <div className="flex justify-end xl:hidden">
-              <ChevronRight className="h-5 w-5 text-gray-400" />
-            </div>
           </div>
         </Card>
       </motion.div>
