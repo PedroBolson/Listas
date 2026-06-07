@@ -14,6 +14,8 @@ import { UpgradePage } from "../features/upgrade/UpgradePage";
 import { AuthGate } from "../features/auth/AuthGate";
 import { PlanSelectionPage } from "../features/onboarding/PlanSelectionPage";
 import { InviteAcceptPage } from "../features/invites/InviteAcceptPage";
+import { TermsPage } from "../features/legal/TermsPage";
+import { PrivacyPage } from "../features/legal/PrivacyPage";
 
 function AppLayout() {
   const location = useLocation();
@@ -83,6 +85,14 @@ const router = createBrowserRouter([
   {
     path: "/invite/:token",
     element: <InviteAcceptPage />,
+  },
+  {
+    path: "/terms",
+    element: <TermsPage />,
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPage />,
   },
   {
     path: "/onboarding/plan",
