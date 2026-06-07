@@ -57,7 +57,7 @@ export function useNavigationLinks() {
       {
         to: "/master",
         icon: <ShieldCheck className="h-4 w-4" />,
-        label: t("navigation.masterConsole"),
+        label: t("navigation.master", { defaultValue: "Master" }),
         roles: [USER_ROLE.MASTER],
       },
     ];

@@ -3,16 +3,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../features/auth/useAuth";
-import { updateUser } from "../../services/userService";
+import { SELECTED_FAMILY_STORAGE_KEY } from "../../domain/models";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Spinner } from "../ui/Spinner";
 
 interface FamilySelectorProps {
     onCreateFamily?: () => void;
+    /** "dropdown" = absolute popup (desktop navbar). "inline" = expands in-place (BottomSheet). */
+    variant?: "dropdown" | "inline";
 }
 
-export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
+export function FamilySelector({ onCreateFamily, variant = "dropdown" }: FamilySelectorProps) {
     const { domainUser } = useAuth();
     const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
@@ -26,14 +28,9 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
 
     const currentFamilyId = domainUser?.managedFamilyId;
 
-    // Buscar TODAS as famílias do usuário via Cloud Function
     useEffect(() => {
         const fetchUserFamilies = async () => {
-            if (!domainUser?.id) {
-                setLoading(false);
-                return;
-            }
-
+            if (!domainUser?.id) { setLoading(false); return; }
             try {
                 const { getUserFamilies } = await import("../../services/familyService");
                 const families = await getUserFamilies();
@@ -44,52 +41,142 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
                 setLoading(false);
             }
         };
-
         fetchUserFamilies();
     }, [domainUser?.id]);
 
-    // Apenas Master pode criar múltiplas famílias
     const planId = domainUser?.billing?.planId;
     const canHaveMultipleFamilies = domainUser?.isTitular && planId === "master";
-
-    // Verificar se atingiu o limite de famílias (apenas Master tem ilimitado)
-    const maxFamilies = planId === "master" ? Infinity : 1;
-    const canCreateMore = userFamilies.length < maxFamilies;
-
-    // SEMPRE mostrar se tiver mais de 1 família (independente do role)
-    // Ou se for titular e puder criar mais
+    const canCreateMore = userFamilies.length < (planId === "master" ? Infinity : 1);
     const shouldShow = userFamilies.length > 1 || (domainUser?.isTitular && canHaveMultipleFamilies && canCreateMore);
 
-    if (loading || !shouldShow) {
-        return null;
+    if (loading || !shouldShow) return null;
+
+    const currentFamilyName = currentFamilyId
+        ? userFamilies.find(f => f.familyId === currentFamilyId)?.familyName || `Família ${currentFamilyId.slice(0, 8)}`
+        : t("family.selectFamily");
+
+    const handleSwitch = async (familyId: string) => {
+        if (familyId === currentFamilyId) { setIsOpen(false); return; }
+        try {
+            setSwitching(true);
+            setIsOpen(false);
+            await new Promise(r => setTimeout(r, 200));
+            window.localStorage.setItem(SELECTED_FAMILY_STORAGE_KEY, familyId);
+            await new Promise(r => setTimeout(r, 300));
+            window.location.href = "/dashboard";
+        } catch (error) {
+            console.error("❌ Erro ao trocar família:", error);
+            setSwitching(false);
+        }
+    };
+
+    // ── Switching overlay (shared) ──────────────────────────────────────────────
+    const switchingOverlay = (
+        <AnimatePresence>
+            {switching && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="fixed inset-0 z-9999 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+                >
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className="flex flex-col items-center gap-4"
+                    >
+                        <Spinner className="h-12 w-12" />
+                        <p className="text-sm font-medium text-secondary">
+                            {t("family.switchingFamily", { defaultValue: "Trocando de família..." })}
+                        </p>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+
+    // ── Inline mode (BottomSheet — sem posicionamento absoluto) ────────────────
+    if (variant === "inline") {
+        return (
+            <div>
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="flex w-full items-center justify-between rounded-xl px-2 py-3 transition hover:bg-surface-alt"
+                >
+                    <span className="text-sm text-secondary">
+                        {t("family.currentFamily", { defaultValue: "Família" })}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className="max-w-40 truncate text-sm font-medium text-primary">
+                            {currentFamilyName}
+                        </span>
+                        <motion.span
+                            animate={{ rotate: isOpen ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <ChevronDown className="h-4 w-4 text-muted" />
+                        </motion.span>
+                    </div>
+                </button>
+
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 420, damping: 36 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="mx-2 mb-2 space-y-0.5 rounded-xl border border-soft bg-surface-alt p-1">
+                                {userFamilies.map((family) => (
+                                    <button
+                                        key={family.familyId}
+                                        className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition hover:bg-surface"
+                                        onClick={() => void handleSwitch(family.familyId)}
+                                    >
+                                        <div>
+                                            <p className="font-medium text-primary">{family.familyName}</p>
+                                            <p className="text-xs text-muted">
+                                                {family.role === "titular" || family.role === "owner"
+                                                    ? t("family.titularRole")
+                                                    : t("family.memberRole")}
+                                            </p>
+                                        </div>
+                                        {family.familyId === currentFamilyId && (
+                                            <Check className="h-4 w-4 shrink-0 text-brand" />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {switchingOverlay}
+            </div>
+        );
     }
 
+    // ── Dropdown mode (desktop navbar) ─────────────────────────────────────────
     return (
         <div className="relative">
             <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsOpen(!isOpen)}
-                trailingIcon={<ChevronDown className={`size-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
+                trailingIcon={<ChevronDown className={`size-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />}
                 className="min-w-[200px] justify-between"
             >
-                <span className="truncate">
-                    {currentFamilyId
-                        ? userFamilies.find(f => f.familyId === currentFamilyId)?.familyName || `Família ${currentFamilyId.slice(0, 8)}`
-                        : t("family.selectFamily")}
-                </span>
+                <span className="truncate">{currentFamilyName}</span>
             </Button>
 
             <AnimatePresence>
                 {isOpen && (
                     <>
-                        {/* Backdrop */}
-                        <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setIsOpen(false)}
-                        />
-
-                        {/* Dropdown */}
+                        <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
                         <motion.div
                             initial={{ opacity: 0, y: -10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -103,44 +190,14 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
                                         <button
                                             key={family.familyId}
                                             className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition hover:bg-surface-alt"
-                                            onClick={async () => {
-                                                if (family.familyId === currentFamilyId) {
-                                                    setIsOpen(false);
-                                                    return;
-                                                }
-
-                                                try {
-                                                    if (!domainUser) return;
-
-                                                    // Inicia animação de transição
-                                                    setSwitching(true);
-                                                    setIsOpen(false);
-
-                                                    // Aguarda um pouco para a animação começar
-                                                    await new Promise(resolve => setTimeout(resolve, 200));
-
-                                                    // Atualizar primaryFamilyId sempre (funciona para titular e member)
-                                                    await updateUser(domainUser.id, {
-                                                        primaryFamilyId: family.familyId,
-                                                    });
-
-                                                    // Aguarda mais um pouco antes de redirecionar
-                                                    await new Promise(resolve => setTimeout(resolve, 300));
-
-                                                    // Redireciona para o dashboard (evita ficar em páginas de outra família)
-                                                    window.location.href = "/dashboard";
-                                                } catch (error) {
-                                                    console.error("❌ Erro ao trocar família:", error);
-                                                    setSwitching(false);
-                                                }
-                                            }}
+                                            onClick={() => void handleSwitch(family.familyId)}
                                         >
                                             <div className="flex flex-col gap-0.5">
-                                                <span className="truncate font-medium">
-                                                    {family.familyName}
-                                                </span>
+                                                <span className="truncate font-medium text-primary">{family.familyName}</span>
                                                 <span className="text-xs text-muted">
-                                                    {family.role === "titular" || family.role === "owner" ? t("family.titularRole") : t("family.memberRole")}
+                                                    {family.role === "titular" || family.role === "owner"
+                                                        ? t("family.titularRole")
+                                                        : t("family.memberRole")}
                                                 </span>
                                             </div>
                                             {family.familyId === currentFamilyId && (
@@ -154,10 +211,7 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
                                             <div className="my-1 border-t border-soft" />
                                             <button
                                                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-brand transition hover:bg-brand-soft"
-                                                onClick={() => {
-                                                    onCreateFamily();
-                                                    setIsOpen(false);
-                                                }}
+                                                onClick={() => { onCreateFamily(); setIsOpen(false); }}
                                             >
                                                 <Plus className="size-4" />
                                                 {t("actions.createFamily")}
@@ -171,30 +225,7 @@ export function FamilySelector({ onCreateFamily }: FamilySelectorProps) {
                 )}
             </AnimatePresence>
 
-            {/* Overlay de transição ao trocar família */}
-            <AnimatePresence>
-                {switching && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="fixed inset-0 z-9999 flex items-center justify-center bg-background/80 backdrop-blur-sm"
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.1, duration: 0.3 }}
-                            className="flex flex-col items-center gap-4"
-                        >
-                            <Spinner className="h-12 w-12" />
-                            <p className="text-sm font-medium text-secondary">
-                                {t("family.switchingFamily", { defaultValue: "Trocando de família..." })}
-                            </p>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {switchingOverlay}
         </div>
     );
 }

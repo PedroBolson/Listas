@@ -4,11 +4,12 @@ import { X, Camera, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { storage } from "../../lib/firebase";
-import { updateUser, getUserById } from "../../services/userService";
+import { updateUser } from "../../services/userService";
 import { useAuth } from "../../features/auth/useAuth";
 import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { getMemberDisplayName } from "../../utils/memberProfile";
 
 interface UserProfileModalProps {
     isOpen: boolean;
@@ -46,9 +47,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                 if (family.ownerId === domainUser.id) {
                     setFamilyOwnerName(domainUser.displayName || domainUser.email);
                 } else {
-                    // Buscar nome do titular
-                    const owner = await getUserById(family.ownerId);
-                    setFamilyOwnerName(owner?.displayName || owner?.email || "Titular");
+                    setFamilyOwnerName(getMemberDisplayName(family.members[family.ownerId], "Titular"));
                 }
             } catch (error) {
                 console.error("Erro ao buscar titular da família:", error);

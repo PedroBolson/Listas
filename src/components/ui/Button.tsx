@@ -42,9 +42,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", icon, trailingIcon, children, disabled, isLoading, ...props }, ref) => {
     const content = (
       <>
-        {icon ? <span className="text-lg">{icon}</span> : null}
+        {icon ? <span className="shrink-0">{icon}</span> : null}
         <span>{children}</span>
-        {trailingIcon ? <span className="text-lg">{trailingIcon}</span> : null}
+        {trailingIcon ? <span className="shrink-0">{trailingIcon}</span> : null}
       </>
     );
 

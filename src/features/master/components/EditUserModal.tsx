@@ -26,6 +26,9 @@ interface EditUserModalProps {
     onSave: () => void;
 }
 
+const inputClass =
+    "w-full rounded-xl border border-soft bg-surface px-4 py-2 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20";
+
 export function EditUserModal({ user, onClose, onSave }: EditUserModalProps) {
     const { t } = useTranslation();
     const [saving, setSaving] = useState(false);
@@ -37,21 +40,28 @@ export function EditUserModal({ user, onClose, onSave }: EditUserModalProps) {
         billingStatus: user.billing?.status || "active",
     });
 
+    const isBillingUser = formData.role === "master" || formData.role === "titular";
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
 
         try {
             const userRef = doc(db, "users", user.id);
-            await updateDoc(userRef, {
+            const updateData: Record<string, unknown> = {
                 displayName: formData.displayName,
                 role: formData.role,
                 status: formData.status,
-                "billing.planId": formData.planId,
-                "billing.status": formData.billingStatus,
                 updatedAt: new Date().toISOString(),
-            });
+            };
 
+            // Members don't own subscription plans — only write billing for titular/master
+            if (isBillingUser) {
+                updateData["billing.planId"] = formData.planId;
+                updateData["billing.status"] = formData.billingStatus;
+            }
+
+            await updateDoc(userRef, updateData);
             onSave();
             onClose();
         } catch (error) {
@@ -74,12 +84,13 @@ export function EditUserModal({ user, onClose, onSave }: EditUserModalProps) {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-lg"
             >
                 <Card className="p-6">
                     <div className="mb-6 flex items-center justify-between">
-                        <h2 className="text-2xl font-bold">
+                        <h2 className="text-xl font-bold text-primary">
                             {t("master.editUser", { defaultValue: "Editar Usuário" })}
                         </h2>
                         <Button variant="ghost" size="sm" onClick={onClose}>
@@ -87,106 +98,117 @@ export function EditUserModal({ user, onClose, onSave }: EditUserModalProps) {
                         </Button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* User Info */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
-                                <Mail className="size-5 text-gray-500" />
-                                <div>
-                                    <p className="text-xs text-gray-500">Email</p>
-                                    <p className="font-medium">{user.email}</p>
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Email (read-only) */}
+                        <div className="flex items-center gap-3 rounded-xl bg-surface-alt px-4 py-3">
+                            <Mail className="size-4 shrink-0 text-muted" />
+                            <div>
+                                <p className="text-xs text-muted">Email</p>
+                                <p className="text-sm font-medium text-primary">{user.email}</p>
+                            </div>
+                        </div>
+
+                        {/* Display name */}
+                        <div>
+                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-secondary">
+                                <User className="size-4" />
+                                {t("master.displayName", { defaultValue: "Nome de Exibição" })}
+                            </label>
+                            <input
+                                type="text"
+                                value={formData.displayName}
+                                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                                className={inputClass}
+                                required
+                            />
+                        </div>
+
+                        {/* Role */}
+                        <div>
+                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-secondary">
+                                <Shield className="size-4" />
+                                {t("master.userRole", { defaultValue: "Função" })}
+                            </label>
+                            <select
+                                value={formData.role}
+                                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                                className={inputClass}
+                            >
+                                <option value="member">Member</option>
+                                <option value="titular">Titular</option>
+                                <option value="master">Master</option>
+                            </select>
+                        </div>
+
+                        {/* Account status */}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-secondary">
+                                {t("master.accountStatus", { defaultValue: "Status da Conta" })}
+                            </label>
+                            <select
+                                value={formData.status}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value as AccountStatus })}
+                                className={inputClass}
+                            >
+                                <option value="active">Active</option>
+                                <option value="grace_period">Grace Period</option>
+                                <option value="suspended">Suspended</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+
+                        {/* Billing — only titular/master users own a subscription plan */}
+                        {isBillingUser && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 34 }}
+                                className="overflow-hidden"
+                            >
+                                <div className="space-y-4 rounded-xl border border-soft bg-surface-alt p-4">
+                                    <h3 className="flex items-center gap-2 text-sm font-semibold text-secondary">
+                                        <CreditCard className="size-4" />
+                                        {t("master.billing", { defaultValue: "Cobrança" })}
+                                    </h3>
+
+                                    <div>
+                                        <label className="mb-2 block text-sm font-medium text-secondary">
+                                            {t("master.plan", { defaultValue: "Plano" })}
+                                        </label>
+                                        <select
+                                            value={formData.planId}
+                                            onChange={(e) => setFormData({ ...formData, planId: e.target.value })}
+                                            className={inputClass}
+                                        >
+                                            <option value="free">Free</option>
+                                            <option value="plus">Plus</option>
+                                            <option value="premium">Premium</option>
+                                            <option value="master">Master</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-2 block text-sm font-medium text-secondary">
+                                            {t("master.billingStatus", { defaultValue: "Status de Pagamento" })}
+                                        </label>
+                                        <select
+                                            value={formData.billingStatus}
+                                            onChange={(e) => setFormData({ ...formData, billingStatus: e.target.value as AccountStatus })}
+                                            className={inputClass}
+                                        >
+                                            <option value="active">Active</option>
+                                            <option value="grace_period">Grace Period</option>
+                                            <option value="suspended">Suspended</option>
+                                            <option value="cancelled">Cancelled</option>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div>
-                                <label className="mb-2 flex items-center gap-2 text-sm font-medium">
-                                    <User className="size-4" />
-                                    {t("master.displayName", { defaultValue: "Nome de Exibição" })}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.displayName}
-                                    onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-gray-600 dark:bg-gray-800"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-2 flex items-center gap-2 text-sm font-medium">
-                                    <Shield className="size-4" />
-                                    {t("master.userRole", { defaultValue: "Função" })}
-                                </label>
-                                <select
-                                    value={formData.role}
-                                    onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-gray-600 dark:bg-gray-800"
-                                >
-                                    <option value="member">Member</option>
-                                    <option value="titular">Titular</option>
-                                    <option value="master">Master</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="mb-2 flex items-center gap-2 text-sm font-medium">
-                                    {t("master.accountStatus", { defaultValue: "Status da Conta" })}
-                                </label>
-                                <select
-                                    value={formData.status}
-                                    onChange={(e) => setFormData({ ...formData, status: e.target.value as AccountStatus })}
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-gray-600 dark:bg-gray-800"
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="grace_period">Grace Period</option>
-                                    <option value="suspended">Suspended</option>
-                                    <option value="cancelled">Cancelled</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Billing */}
-                        <div className="space-y-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                            <h3 className="flex items-center gap-2 font-semibold">
-                                <CreditCard className="size-4" />
-                                {t("master.billing", { defaultValue: "Cobrança" })}
-                            </h3>
-
-                            <div>
-                                <label className="mb-2 block text-sm font-medium">
-                                    {t("master.plan", { defaultValue: "Plano" })}
-                                </label>
-                                <select
-                                    value={formData.planId}
-                                    onChange={(e) => setFormData({ ...formData, planId: e.target.value })}
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-gray-600 dark:bg-gray-800"
-                                >
-                                    <option value="free">Free</option>
-                                    <option value="plus">Plus</option>
-                                    <option value="premium">Premium</option>
-                                    <option value="master">Master</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="mb-2 block text-sm font-medium">
-                                    {t("master.billingStatus", { defaultValue: "Status de Pagamento" })}
-                                </label>
-                                <select
-                                    value={formData.billingStatus}
-                                    onChange={(e) => setFormData({ ...formData, billingStatus: e.target.value as AccountStatus })}
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-gray-600 dark:bg-gray-800"
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="grace_period">Grace Period</option>
-                                    <option value="suspended">Suspended</option>
-                                    <option value="cancelled">Cancelled</option>
-                                </select>
-                            </div>
-                        </div>
+                            </motion.div>
+                        )}
 
                         {/* Actions */}
-                        <div className="flex justify-end gap-3">
+                        <div className="flex justify-end gap-3 pt-1">
                             <Button type="button" variant="ghost" onClick={onClose}>
                                 {t("actions.cancel", { defaultValue: "Cancelar" })}
                             </Button>

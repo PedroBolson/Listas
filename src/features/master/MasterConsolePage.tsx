@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Users, ClipboardList, Settings, Search, Edit, Package, DollarSign } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { Shield, Users, ClipboardList, Search, Edit, Package, DollarSign } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -33,10 +33,20 @@ interface UserDataLocal {
     };
 }
 
+// Tailwind JIT needs explicit class strings — no dynamic template literals
+const STAT_STYLES: Record<string, { icon: string; bg: string }> = {
+    brand:   { icon: "text-brand",                              bg: "bg-brand/10"         },
+    success: { icon: "text-green-600 dark:text-green-400",      bg: "bg-green-500/10"     },
+    accent:  { icon: "text-purple-600 dark:text-purple-400",    bg: "bg-purple-500/10"    },
+    warning: { icon: "text-amber-600 dark:text-amber-400",      bg: "bg-amber-500/10"     },
+};
+
 export function MasterConsolePage() {
     const { domainUser } = useAuth();
     const { t } = useTranslation();
     const { plans } = usePlans();
+    const shouldReduce = useReducedMotion();
+
     const [stats, setStats] = useState<Stats>({
         totalUsers: 0,
         totalFamilies: 0,
@@ -76,7 +86,6 @@ export function MasterConsolePage() {
                     activeTitulars,
                 });
 
-                // Load users
                 const usersData: UserDataLocal[] = usersSnap.docs.map((doc) => ({
                     id: doc.id,
                     email: doc.data().email || "",
@@ -93,9 +102,7 @@ export function MasterConsolePage() {
             }
         }
 
-        if (domainUser?.isMaster) {
-            loadData();
-        }
+        if (domainUser?.isMaster) void loadData();
     }, [domainUser?.isMaster]);
 
     const filteredUsers = users.filter(
@@ -125,6 +132,12 @@ export function MasterConsolePage() {
         );
     }
 
+    const block = (delay: number) => ({
+        initial: shouldReduce ? { opacity: 0 } : { opacity: 0, y: 14 },
+        animate: { opacity: 1, y: 0 },
+        transition: { delay, type: "spring" as const, stiffness: 380, damping: 30 },
+    });
+
     const statCards = [
         {
             icon: Users,
@@ -153,25 +166,24 @@ export function MasterConsolePage() {
     ];
 
     return (
-        <motion.div
-            className="mx-auto max-w-6xl space-y-6 p-6"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-        >
-            <div className="flex items-center gap-3">
+        <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
+
+            {/* ── Header ── */}
+            <motion.div className="flex items-center gap-3" {...block(0.04)}>
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
                     <Shield className="h-6 w-6" />
                 </div>
                 <div>
-                    <h1 className="text-3xl font-bold text-primary">
+                    <h1 className="text-2xl font-bold text-primary sm:text-3xl">
                         {t("master.console", { defaultValue: "Console Master" })}
                     </h1>
-                    <p className="mt-1 text-sm text-muted">
+                    <p className="mt-0.5 text-sm text-muted">
                         {t("master.subtitle", { defaultValue: "Controle total da plataforma" })}
                     </p>
                 </div>
-            </div>
+            </motion.div>
 
+            {/* ── Stat cards ── */}
             {loading ? (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {[1, 2, 3, 4].map((i) => (
@@ -186,177 +198,145 @@ export function MasterConsolePage() {
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {statCards.map((stat) => {
+                    {statCards.map((stat, idx) => {
                         const Icon = stat.icon;
+                        const style = STAT_STYLES[stat.color] ?? STAT_STYLES.brand;
                         return (
-                            <Card key={stat.label} padding="lg" elevated>
-                                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-${stat.color}/10 text-${stat.color}`}>
-                                    <Icon className="h-6 w-6" />
-                                </div>
-                                <p className="mt-4 text-3xl font-bold text-primary">{stat.value}</p>
-                                <p className="mt-1 text-sm text-muted">{stat.label}</p>
-                            </Card>
+                            <motion.div
+                                key={stat.label}
+                                {...block(0.08 + idx * 0.07)}
+                                whileHover={shouldReduce ? {} : { y: -4 }}
+                            >
+                                <Card padding="lg" elevated className="h-full">
+                                    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${style.bg} ${style.icon}`}>
+                                        <Icon className="h-6 w-6" />
+                                    </div>
+                                    <p className="mt-4 text-3xl font-bold text-primary">{stat.value}</p>
+                                    <p className="mt-1 text-sm text-muted">{stat.label}</p>
+                                </Card>
+                            </motion.div>
                         );
                     })}
                 </div>
             )}
 
-            <div className="grid gap-4 lg:grid-cols-2">
+            {/* ── Plans ── */}
+            <motion.div {...block(0.36)}>
                 <Card padding="lg" elevated>
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-soft text-brand">
-                            <Users className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-primary">
-                                {t("master.manageUsers", { defaultValue: "Gerenciar Usuários" })}
-                            </h3>
-                            <p className="text-xs text-muted">
-                                {t("master.manageUsersHint", { defaultValue: "Ver, editar e controlar usuários" })}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="mt-4">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                            <input
-                                type="text"
-                                placeholder={t("master.searchUsers", { defaultValue: "Buscar usuários..." })}
-                                className="w-full rounded-xl border border-soft bg-surface-alt py-2 pl-10 pr-4 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/40"
-                            />
-                        </div>
-                    </div>
-                </Card>
-
-                <Card padding="lg" elevated>
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success">
-                            <Settings className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-primary">
-                                {t("master.systemSettings", { defaultValue: "Configurações do Sistema" })}
-                            </h3>
-                            <p className="text-xs text-muted">
-                                {t("master.systemSettingsHint", { defaultValue: "Ajustes globais da plataforma" })}
-                            </p>
-                        </div>
-                    </div>
-                    <Button className="mt-4 w-full gap-2" size="sm">
-                        <Settings className="h-4 w-4" />
-                        {t("master.openSettings", { defaultValue: "Abrir configurações" })}
-                    </Button>
-                </Card>
-            </div>
-
-            {/* Plans Management */}
-            <Card padding="lg" elevated>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-                            <Package className="h-5 w-5" />
+                    <div className="flex items-center gap-2">
+                        <Package className="h-5 w-5 text-secondary" />
+                        <h3 className="text-lg font-semibold text-primary">
                             {t("master.plans", { defaultValue: "Planos" })}
                         </h3>
-                        <p className="mt-1 text-sm text-muted">
-                            {t("master.plansHint", { defaultValue: "Gerenciar planos e preços" })}
-                        </p>
                     </div>
-                </div>
-                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {plans.map((plan) => (
-                        <Card key={plan.id} className="p-4">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <h4 className="font-semibold">{plan.name}</h4>
-                                    <p className="mt-1 flex items-baseline gap-1 text-sm">
-                                        <DollarSign className="h-3 w-3" />
-                                        <span className="font-bold">{plan.props.monthlyPrice}</span>
-                                        <span className="text-gray-500">/mês</span>
-                                    </p>
+                    <p className="mt-1 text-sm text-muted">
+                        {t("master.plansHint", { defaultValue: "Gerenciar planos e preços" })}
+                    </p>
+                    <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        {plans.map((plan) => (
+                            <Card key={plan.id} className="p-4">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <h4 className="font-semibold text-primary">{plan.name}</h4>
+                                        <p className="mt-1 flex items-baseline gap-1 text-sm">
+                                            <DollarSign className="h-3 w-3 text-muted" />
+                                            <span className="font-bold text-primary">{plan.props.monthlyPrice}</span>
+                                            <span className="text-muted">/mês</span>
+                                        </p>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setEditingPlan(plan.props)}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Button>
                                 </div>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setEditingPlan(plan.props)}
-                                >
-                                    <Edit className="h-4 w-4" />
-                                </Button>
-                            </div>
-                            <div className="mt-3 space-y-1 text-xs text-gray-600 dark:text-gray-400">
-                                <p>{plan.limits.familyMembers === Infinity ? "∞" : plan.limits.familyMembers} membros</p>
-                                <p>{plan.limits.listsPerFamily === Infinity ? "∞" : plan.limits.listsPerFamily} listas</p>
-                                <p>{plan.limits.itemsPerList === Infinity ? "∞" : plan.limits.itemsPerList} itens</p>
-                            </div>
-                        </Card>
-                    ))}
-                </div>
-            </Card>
-
-            {/* Users Management */}
-            <Card padding="lg" elevated>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-                            <Users className="h-5 w-5" />
-                            {t("master.users", { defaultValue: "Usuários" })}
-                        </h3>
-                        <p className="mt-1 text-sm text-muted">
-                            {t("master.usersHint", { defaultValue: "Ver e gerenciar todos os usuários" })}
-                        </p>
+                                <div className="mt-3 space-y-1 text-xs text-muted">
+                                    <p>{plan.limits.familyMembers === Infinity ? "∞" : plan.limits.familyMembers} membros</p>
+                                    <p>{plan.limits.listsPerFamily === Infinity ? "∞" : plan.limits.listsPerFamily} listas</p>
+                                    <p>{plan.limits.itemsPerList === Infinity ? "∞" : plan.limits.itemsPerList} itens</p>
+                                </div>
+                            </Card>
+                        ))}
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleRefresh}>
-                        {t("actions.refresh", { defaultValue: "Atualizar" })}
-                    </Button>
-                </div>
-                <div className="mt-4">
-                    <div className="relative">
+                </Card>
+            </motion.div>
+
+            {/* ── Users ── */}
+            <motion.div {...block(0.44)}>
+                <Card padding="lg" elevated>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <Users className="h-5 w-5 text-secondary" />
+                                <h3 className="text-lg font-semibold text-primary">
+                                    {t("master.users", { defaultValue: "Usuários" })}
+                                </h3>
+                            </div>
+                            <p className="mt-1 text-sm text-muted">
+                                {t("master.usersHint", { defaultValue: "Ver e gerenciar todos os usuários" })}
+                            </p>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={handleRefresh}>
+                            {t("actions.refresh", { defaultValue: "Atualizar" })}
+                        </Button>
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative mt-4">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                         <input
                             type="text"
                             placeholder={t("master.searchUsers", { defaultValue: "Buscar usuários..." })}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full rounded-xl border border-soft bg-surface-alt py-2 pl-10 pr-4 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/40"
+                            className="w-full rounded-xl border border-soft bg-surface-alt py-2 pl-10 pr-4 text-sm text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
                         />
                     </div>
-                </div>
-                <div className="mt-4 space-y-2 max-h-96 overflow-y-auto">
-                    {filteredUsers.map((user) => (
-                        <div
-                            key={user.id}
-                            className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300">
-                                    <span className="text-sm font-semibold">
-                                        {user.displayName?.charAt(0) || user.email.charAt(0).toUpperCase()}
-                                    </span>
-                                </div>
-                                <div>
-                                    <p className="font-medium">{user.displayName || user.email}</p>
-                                    <p className="text-xs text-gray-500">{user.email}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <StatusPill
-                                    tone={user.role === "master" ? "danger" : user.role === "titular" ? "success" : "info"}
-                                >
-                                    {user.role}
-                                </StatusPill>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setEditingUser(user as any)}
-                                >
-                                    <Edit className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </Card>
 
-            {/* Modals */}
+                    {/* User list */}
+                    <div className="mt-4 max-h-96 space-y-2 overflow-y-auto">
+                        {filteredUsers.map((user, idx) => (
+                            <motion.div
+                                key={user.id}
+                                initial={shouldReduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.48 + idx * 0.035, type: "spring", stiffness: 420, damping: 34 }}
+                                className="flex items-center justify-between rounded-xl border border-soft bg-surface-alt p-3 transition hover:border-brand/20 hover:bg-surface"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+                                        <span className="text-sm font-semibold">
+                                            {user.displayName?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-primary">{user.displayName || user.email}</p>
+                                        <p className="text-xs text-muted">{user.email}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <StatusPill
+                                        tone={user.role === "master" ? "danger" : user.role === "titular" ? "success" : "info"}
+                                    >
+                                        {user.role}
+                                    </StatusPill>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setEditingUser(user as any)}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </Card>
+            </motion.div>
+
+            {/* ── Modals ── */}
             <AnimatePresence>
                 {editingPlan && (
                     <EditPlanModal
@@ -373,6 +353,6 @@ export function MasterConsolePage() {
                     />
                 )}
             </AnimatePresence>
-        </motion.div>
+        </div>
     );
 }

@@ -32,10 +32,10 @@ export function Sidebar() {
         </div>
         <nav className="relative flex flex-col gap-2">
           {links.map((link) => {
-            // Dashboard deve estar ativo tanto em "/" quanto em "/dashboard"
-            const isDashboardLink = link.to === "/dashboard";
-            const customIsActive = isDashboardLink
-              ? (location.pathname === "/" || location.pathname === "/dashboard")
+            // Lists é a home — ativo em "/" e em qualquer subrota de /lists
+            const isListsLink = link.to === "/lists";
+            const customIsActive = isListsLink
+              ? (location.pathname === "/" || location.pathname.startsWith("/lists"))
               : undefined;
 
             return (

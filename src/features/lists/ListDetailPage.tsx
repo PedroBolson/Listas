@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Trash2, Edit, Check, Users, Package, Search, Eraser, AlertTriangle } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { ArrowLeft, Plus, Trash2, Edit, Check, Users, Package, Search, Eraser, AlertTriangle, ShoppingCart, ClipboardList } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card } from "../../components/ui/Card";
@@ -9,11 +9,12 @@ import { Avatar } from "../../components/ui/Avatar";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { useAuth } from "../auth/useAuth";
 import { useList, useListItems } from "../../hooks/useLists";
+import { useFamily } from "../../hooks/useFamily";
 import { createListItem, toggleListItem, deleteListItem, deleteList } from "../../services/listService";
-import { getUserById } from "../../services/userService";
 import { ManageListMembersModal } from "../../components/lists/ManageListMembersModal";
 import { UserProfileViewModal } from "../../components/profile/UserProfileViewModal";
 import type { DomainUserProps } from "../../domain/models";
+import { getMemberDisplayName, memberProfileToDomainUser } from "../../utils/memberProfile";
 
 export function ListDetailPage() {
     const { listId } = useParams<{ listId: string }>();
@@ -46,7 +47,10 @@ export function ListDetailPage() {
     const [selectedUser, setSelectedUser] = useState<DomainUserProps | null>(null);
     const [showUserProfileModal, setShowUserProfileModal] = useState(false);
 
+    const shouldReduce = useReducedMotion();
+
     const familyId = domainUser?.managedFamilyId ?? null;
+    const { family } = useFamily(familyId);
     const { list, loading: listLoading } = useList(familyId, listId ?? null);
     const { items, loading: itemsLoading } = useListItems(familyId, listId ?? null);
 
@@ -55,7 +59,15 @@ export function ListDetailPage() {
     const isCollaborator = list?.collaborators.includes(domainUser?.id ?? '');
     const canEdit = isOwner || isCollaborator || domainUser?.isMaster;
 
-    // Fetch user names and avatars for items, collaborators, and owner
+    const profileForUser = (userId: string): DomainUserProps => {
+        if (domainUser?.id === userId) {
+            return domainUser.props;
+        }
+
+        return memberProfileToDomainUser(userId, family?.members[userId]);
+    };
+
+    // Usar dados cacheados em families.members. users/{uid} não é mais legível por outros usuários.
     useEffect(() => {
         const userIds = new Set<string>();
 
@@ -73,24 +85,22 @@ export function ListDetailPage() {
             userIds.add(list.ownerId);
         }
 
-        const fetchUserData = async () => {
-            const names: Record<string, string> = {};
-            const avatars: Record<string, string | null> = {};
-            for (const userId of userIds) {
-                if (!userNames[userId]) {
-                    const user = await getUserById(userId);
-                    names[userId] = user?.displayName || user?.email || "Usuário";
-                    avatars[userId] = user?.photoURL || null;
-                }
+        const names: Record<string, string> = {};
+        const avatars: Record<string, string | null> = {};
+        for (const userId of userIds) {
+            if (domainUser?.id === userId) {
+                names[userId] = domainUser.displayName || domainUser.email || "Usuário";
+                avatars[userId] = domainUser.photoURL || null;
+            } else {
+                const member = family?.members[userId];
+                names[userId] = getMemberDisplayName(member);
+                avatars[userId] = member?.photoURL || null;
             }
-            if (Object.keys(names).length > 0) {
-                setUserNames((prev) => ({ ...prev, ...names }));
-                setUserAvatars((prev) => ({ ...prev, ...avatars }));
-            }
-        };
+        }
 
-        fetchUserData();
-    }, [items, list?.collaborators, list?.ownerId]);
+        setUserNames((prev) => ({ ...prev, ...names }));
+        setUserAvatars((prev) => ({ ...prev, ...avatars }));
+    }, [items, list?.collaborators, list?.ownerId, family, domainUser]);
 
     const handleAddItem = async () => {
         if (!newItemName.trim() || !familyId || !listId || !domainUser || !canEdit) return;
@@ -165,8 +175,26 @@ export function ListDetailPage() {
 
     if (listLoading) {
         return (
-            <div className="flex min-h-screen items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+            <div className="mx-auto max-w-5xl animate-pulse space-y-6 p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                    <div className="h-9 w-24 rounded-xl bg-surface-alt" />
+                    <div className="flex gap-1">
+                        <div className="h-9 w-9 rounded-xl bg-surface-alt" />
+                        <div className="h-9 w-9 rounded-xl bg-surface-alt" />
+                    </div>
+                </div>
+                <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 shrink-0 rounded-xl bg-surface-alt" />
+                    <div className="flex-1 space-y-3">
+                        <div className="h-7 w-2/3 rounded-lg bg-surface-alt" />
+                        <div className="h-4 w-1/3 rounded-lg bg-surface-alt" />
+                        <div className="h-1.5 w-full rounded-full bg-surface-alt" />
+                    </div>
+                </div>
+                <div className="h-14 rounded-2xl bg-surface-alt" />
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-16 rounded-xl bg-surface-alt" style={{ opacity: 1 - (i - 1) * 0.2 }} />
+                ))}
             </div>
         );
     }
@@ -185,6 +213,11 @@ export function ListDetailPage() {
             </div>
         );
     }
+
+    const isShopping = list.type === "shopping";
+    const ListIcon = isShopping ? ShoppingCart : ClipboardList;
+    const progress = items.length > 0 ? Math.round((checkedItems.length / items.length) * 100) : 0;
+    const isAllDone = items.length > 0 && uncheckedItems.length === 0 && !itemsLoading;
 
     const handleDeleteCompletedItems = () => {
         if (!familyId || !listId) return;
@@ -280,29 +313,97 @@ export function ListDetailPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
         >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-4">
+                {/* Row 1: back nav + owner actions */}
+                <div className="flex items-center justify-between">
+                    <motion.button
+                        onClick={() => navigate("/lists")}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-surface-alt hover:text-primary"
+                        whileHover={shouldReduce ? {} : { x: -2 }}
+                        whileTap={shouldReduce ? {} : { scale: 0.96 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        <span>{t("navigation.lists", { defaultValue: "Listas" })}</span>
+                    </motion.button>
+
+                    {isOwner && (
+                        <div className="flex gap-1">
+                            <button
+                                onClick={() => setShowManageMembersModal(true)}
+                                title={t("lists.share.manageMembers", { defaultValue: "Gerenciar membros" })}
+                                className="flex h-9 w-9 items-center justify-center rounded-xl text-muted transition hover:bg-surface-alt hover:text-primary"
+                            >
+                                <Users className="h-4 w-4" />
+                            </button>
+                            <button
+                                onClick={() => navigate(`/lists/${listId}/edit`)}
+                                title={t("lists.edit", { defaultValue: "Editar lista" })}
+                                className="flex h-9 w-9 items-center justify-center rounded-xl text-muted transition hover:bg-surface-alt hover:text-primary"
+                            >
+                                <Edit className="h-4 w-4" />
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Row 2: type icon + title + progress + members */}
                 <div className="flex items-start gap-4">
-                    <Button variant="ghost" onClick={() => navigate("/lists")} className="mt-1">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <div>
-                        <h1 className="text-3xl font-bold text-primary">{list.name}</h1>
+                    <div className={`shrink-0 rounded-xl p-3 ${
+                        isShopping
+                            ? "bg-purple-500/12 text-purple-500"
+                            : "bg-blue-500/12 text-blue-500"
+                    }`}>
+                        <ListIcon className="h-6 w-6" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-2xl font-bold text-primary sm:text-3xl">{list.name}</h1>
                         {list.description && (
-                            <p className="mt-2 text-sm text-muted">{list.description}</p>
+                            <p className="mt-1 text-sm text-muted">{list.description}</p>
                         )}
-                        <div className="mt-3 flex flex-col gap-2 text-xs text-muted">
-                            {/* Avatars dos membros com acesso */}
+
+                        {/* Progress bar */}
+                        {!itemsLoading && items.length > 0 && (
+                            <div className="mt-3 space-y-1.5">
+                                <div className="flex items-center justify-between text-xs text-muted">
+                                    <span>
+                                        {checkedItems.length}{" "}
+                                        {isShopping
+                                            ? t("lists.purchased", { defaultValue: "comprados" })
+                                            : t("lists.completed", { defaultValue: "concluídos" })
+                                        }{" "}
+                                        {t("general.of", { defaultValue: "de" })}{" "}{items.length}
+                                    </span>
+                                    <span className={progress === 100 ? "font-semibold text-green-600 dark:text-green-400" : ""}>
+                                        {progress}%
+                                    </span>
+                                </div>
+                                <div className="h-1.5 overflow-hidden rounded-full bg-surface-alt">
+                                    <motion.div
+                                        className={`h-full rounded-full ${
+                                            progress === 100
+                                                ? "bg-green-500"
+                                                : isShopping
+                                                    ? "bg-linear-to-r from-purple-500 to-pink-400"
+                                                    : "bg-linear-to-r from-brand to-blue-400"
+                                        }`}
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${progress}%` }}
+                                        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Members */}
+                        <div className="mt-4 flex items-center gap-3">
                             <div className="flex -space-x-2">
-                                {/* Owner sempre aparece primeiro */}
                                 {list.ownerId && (
                                     <button
-                                        key={list.ownerId}
-                                        onClick={async () => {
-                                            const user = await getUserById(list.ownerId);
-                                            if (user) {
-                                                setSelectedUser(user);
-                                                setShowUserProfileModal(true);
-                                            }
+                                        onClick={() => {
+                                            setSelectedUser(profileForUser(list.ownerId));
+                                            setShowUserProfileModal(true);
                                         }}
                                         className="transition hover:z-10 hover:scale-110"
                                     >
@@ -315,16 +416,12 @@ export function ListDetailPage() {
                                         />
                                     </button>
                                 )}
-                                {/* Colaboradores (até 3) */}
                                 {list.collaborators?.slice(0, 3).map((userId) => (
                                     <button
                                         key={userId}
-                                        onClick={async () => {
-                                            const user = await getUserById(userId);
-                                            if (user) {
-                                                setSelectedUser(user);
-                                                setShowUserProfileModal(true);
-                                            }
+                                        onClick={() => {
+                                            setSelectedUser(profileForUser(userId));
+                                            setShowUserProfileModal(true);
                                         }}
                                         className="transition hover:z-10 hover:scale-110"
                                     >
@@ -337,59 +434,18 @@ export function ListDetailPage() {
                                         />
                                     </button>
                                 ))}
-                                {/* Indicador de mais membros */}
                                 {list.collaborators && list.collaborators.length > 3 && (
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-alt text-xs font-medium text-muted ring-2 ring-surface">
                                         +{list.collaborators.length - 3}
                                     </div>
                                 )}
                             </div>
-
-                            {/* Textos em linha */}
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span>
-                                    {1 + (list.collaborators?.length || 0)} {t("general.members", { defaultValue: "membros" })}
-                                </span>
-                                <span>•</span>
-                                <span>
-                                    {items.length} {t("lists.itemsCount", { defaultValue: "itens" })}
-                                </span>
-                                {items.length > 0 && (
-                                    <>
-                                        <span>•</span>
-                                        <span>
-                                            {checkedItems.length} {list.type === "shopping"
-                                                ? t("lists.purchased", { defaultValue: "comprados" })
-                                                : t("lists.completed", { defaultValue: "concluídos" })
-                                            }
-                                        </span>
-                                    </>
-                                )}
-                            </div>
+                            <span className="text-xs text-muted">
+                                {1 + (list.collaborators?.length || 0)} {t("general.members", { defaultValue: "membros" })}
+                            </span>
                         </div>
                     </div>
                 </div>
-                {/* Apenas owner pode gerenciar membros e editar lista */}
-                {isOwner && (
-                    <div className="flex shrink-0 gap-2">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowManageMembersModal(true)}
-                            title={t("lists.share.manageMembers", { defaultValue: "Gerenciar membros" })}
-                        >
-                            <Users className="h-5 w-5" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/lists/${listId}/edit`)}
-                            title={t("lists.edit", { defaultValue: "Editar lista" })}
-                        >
-                            <Edit className="h-5 w-5" />
-                        </Button>
-                    </div>
-                )}
             </div>
 
             <Card padding="md" elevated>
@@ -471,15 +527,21 @@ export function ListDetailPage() {
             </Card>
 
             {itemsLoading ? (
-                <Card padding="lg" elevated>
-                    <div className="space-y-3">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="animate-pulse">
-                                <div className="h-12 rounded-xl bg-surface-alt" />
+                <div className="animate-pulse space-y-3">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div
+                            key={i}
+                            className="flex items-center gap-3 rounded-xl border border-soft p-4"
+                            style={{ opacity: 1 - (i - 1) * 0.18 }}
+                        >
+                            <div className="h-6 w-6 shrink-0 rounded-lg bg-surface-alt" />
+                            <div className="flex-1 space-y-2">
+                                <div className="h-4 rounded-lg bg-surface-alt" style={{ width: `${72 - i * 8}%` }} />
+                                <div className="h-3 w-24 rounded-lg bg-surface-alt" />
                             </div>
-                        ))}
-                    </div>
-                </Card>
+                        </div>
+                    ))}
+                </div>
             ) : items.length === 0 ? (
                 <Card padding="lg" elevated>
                     <div className="py-12 text-center">
@@ -575,128 +637,210 @@ export function ListDetailPage() {
                         </div>
                     </Card>
 
+                    {/* All done celebration */}
+                    <AnimatePresence>
+                        {isAllDone && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.92 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.92 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                                className="rounded-2xl border border-green-500/20 bg-green-500/5 py-12 text-center"
+                            >
+                                <motion.div
+                                    animate={shouldReduce ? {} : { rotate: [0, -12, 12, -8, 8, -4, 4, 0] }}
+                                    transition={{ delay: 0.3, duration: 0.8 }}
+                                    className="text-5xl"
+                                >
+                                    🎉
+                                </motion.div>
+                                <p className="mt-3 text-base font-semibold text-green-700 dark:text-green-400">
+                                    {isShopping
+                                        ? t("lists.allPurchased", { defaultValue: "Compras finalizadas!" })
+                                        : t("lists.allCompleted", { defaultValue: "Tudo concluído!" })}
+                                </p>
+                                <p className="mt-1 text-sm text-muted">
+                                    {t("lists.allDoneHint", { defaultValue: "Todos os itens estão marcados" })}
+                                </p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     {uncheckedItems.length > 0 && (
-                        <Card padding="lg" elevated>
-                            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
-                                {t("lists.pending", { defaultValue: "Pendentes" })} ({uncheckedItems.length})
-                            </h3>
-                            <div className="space-y-2">
+                        <div>
+                            {/* Section header */}
+                            <div className="mb-3 flex items-center gap-2.5 px-1">
+                                <div className={`h-2 w-2 rounded-full ${isShopping ? "bg-purple-400" : "bg-blue-400"}`} />
+                                <span className="text-xs font-semibold uppercase tracking-widest text-muted">
+                                    {t("lists.pending", { defaultValue: "Pendentes" })}
+                                </span>
+                                <motion.span
+                                    key={uncheckedItems.length}
+                                    initial={shouldReduce ? {} : { scale: 1.35, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                                    className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+                                        isShopping
+                                            ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                                            : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                    }`}
+                                >
+                                    {uncheckedItems.length}
+                                </motion.span>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <AnimatePresence initial={false}>
                                 {uncheckedItems.map((item) => (
-                                    <div
+                                    <motion.div
                                         key={item.id}
-                                        className="flex items-start gap-3 rounded-xl border border-soft bg-surface-alt p-4 transition hover:border-brand"
+                                        layout
+                                        initial={shouldReduce ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.98 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={shouldReduce ? { opacity: 0 } : { opacity: 0, x: 16, scale: 0.96 }}
+                                        whileHover={shouldReduce ? {} : { y: -2 }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 34 }}
+                                        className="group relative flex cursor-default items-start gap-3 overflow-hidden rounded-xl border border-soft bg-surface-alt p-4 transition-shadow hover:shadow-sm"
                                     >
-                                        <button
+                                        <div className={`absolute inset-y-0 left-0 w-0.5 ${isShopping ? "bg-purple-400/60" : "bg-blue-400/60"}`} />
+                                        {/* Circular unchecked toggle */}
+                                        <motion.button
                                             onClick={() => handleToggleItem(item.id, item.checked)}
-                                            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 border-muted/40 transition hover:border-brand hover:bg-brand-soft"
+                                            whileTap={shouldReduce ? {} : { scale: 0.68 }}
+                                            transition={{ type: "spring", stiffness: 600, damping: 20 }}
+                                            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-muted/30 transition hover:border-brand hover:bg-brand/10"
                                         />
-                                        <div className="flex-1 space-y-1">
+                                        <div className="min-w-0 flex-1">
                                             <div className="flex items-start justify-between gap-2">
-                                                <span className="text-sm font-medium text-primary">
+                                                <span className="text-sm font-medium leading-snug text-primary">
                                                     {item.name}
                                                     {item.quantity && (
-                                                        <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-xs text-brand">
-                                                            {item.quantity}x
+                                                        <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand">
+                                                            {item.quantity}×
                                                         </span>
                                                     )}
                                                 </span>
                                                 {canEdit && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
+                                                    <motion.button
                                                         onClick={() => handleDeleteItem(item.id)}
-                                                        className="text-danger hover:bg-danger/10"
+                                                        whileTap={{ scale: 0.85 }}
+                                                        className="shrink-0 rounded-lg p-1 text-muted opacity-100 transition hover:bg-danger/10 hover:text-danger sm:opacity-0 sm:group-hover:opacity-100"
                                                     >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </motion.button>
                                                 )}
                                             </div>
                                             {item.notes && (
-                                                <p className="text-xs text-muted">{item.notes}</p>
+                                                <p className="mt-0.5 text-xs text-muted">{item.notes}</p>
                                             )}
-                                            <div className="flex items-center gap-2 text-xs text-muted">
+                                            <div className="mt-2 flex items-center gap-1.5 text-xs text-muted">
                                                 <Avatar
                                                     src={userAvatars[item.createdBy]}
                                                     fallback={userNames[item.createdBy]?.[0] || "?"}
                                                     size="sm"
                                                 />
-                                                <span>
-                                                    {t("lists.addedBy", { defaultValue: "Adicionado por" })}{" "}
-                                                    <span className="font-medium">{userNames[item.createdBy] || "..."}</span>
-                                                </span>
+                                                <span className="truncate">{userNames[item.createdBy] || "..."}</span>
                                             </div>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 ))}
+                                </AnimatePresence>
                             </div>
-                        </Card>
+                        </div>
                     )}
 
                     {checkedItems.length > 0 && (
-                        <Card padding="lg" elevated>
-                            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
-                                {list.type === "shopping"
-                                    ? t("lists.purchased", { defaultValue: "Comprados" })
-                                    : t("lists.completed", { defaultValue: "Concluídos" })
-                                } ({checkedItems.length})
-                            </h3>
-                            <div className="space-y-2">
+                        <div>
+                            {/* Section header */}
+                            <div className="mb-3 flex items-center gap-2.5 px-1">
+                                <div className="h-2 w-2 rounded-full bg-green-500" />
+                                <span className="text-xs font-semibold uppercase tracking-widest text-muted">
+                                    {isShopping
+                                        ? t("lists.purchased", { defaultValue: "Comprados" })
+                                        : t("lists.completed", { defaultValue: "Concluídos" })}
+                                </span>
+                                <motion.span
+                                    key={checkedItems.length}
+                                    initial={shouldReduce ? {} : { scale: 1.35, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                                    className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-green-500/10 px-1.5 text-xs font-bold text-green-600 dark:text-green-400"
+                                >
+                                    {checkedItems.length}
+                                </motion.span>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <AnimatePresence initial={false}>
                                 {checkedItems.map((item) => (
-                                    <div
+                                    <motion.div
                                         key={item.id}
-                                        className="flex items-start gap-3 rounded-xl border border-soft bg-surface-alt p-4 opacity-60 transition hover:opacity-100"
+                                        layout
+                                        initial={shouldReduce ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.98 }}
+                                        animate={{ opacity: 0.6, y: 0, scale: 1 }}
+                                        exit={shouldReduce ? { opacity: 0 } : { opacity: 0, x: 16, scale: 0.96 }}
+                                        whileHover={{ opacity: 1 }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 34 }}
+                                        className="group relative flex cursor-default items-start gap-3 overflow-hidden rounded-xl border border-soft bg-green-500/5 p-4"
                                     >
-                                        <button
+                                        <div className="absolute inset-y-0 left-0 w-0.5 bg-green-500/50" />
+                                        {/* Circular checked toggle */}
+                                        <motion.button
                                             onClick={() => handleToggleItem(item.id, item.checked)}
-                                            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 border-green-600 bg-green-600 text-white transition hover:bg-green-700"
+                                            whileTap={shouldReduce ? {} : { scale: 0.68 }}
+                                            transition={{ type: "spring", stiffness: 600, damping: 20 }}
+                                            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-500 text-white transition hover:bg-green-600"
                                         >
-                                            <Check className="h-4 w-4" />
-                                        </button>
-                                        <div className="flex-1 space-y-1">
+                                            <motion.span
+                                                initial={shouldReduce ? {} : { scale: 0, rotate: -45 }}
+                                                animate={{ scale: 1, rotate: 0 }}
+                                                transition={{ type: "spring", stiffness: 600, damping: 22 }}
+                                                className="flex"
+                                            >
+                                                <Check className="h-3 w-3" />
+                                            </motion.span>
+                                        </motion.button>
+                                        <div className="min-w-0 flex-1">
                                             <div className="flex items-start justify-between gap-2">
-                                                <span className="text-sm font-medium text-primary line-through">
+                                                <span className="text-sm font-medium leading-snug text-primary line-through opacity-60">
                                                     {item.name}
                                                     {item.quantity && (
-                                                        <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-xs text-brand line-through">
-                                                            {item.quantity}x
+                                                        <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand line-through">
+                                                            {item.quantity}×
                                                         </span>
                                                     )}
                                                 </span>
                                                 {canEdit && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
+                                                    <motion.button
                                                         onClick={() => handleDeleteItem(item.id)}
-                                                        className="text-danger hover:bg-danger/10"
+                                                        whileTap={{ scale: 0.85 }}
+                                                        className="shrink-0 rounded-lg p-1 text-muted opacity-100 transition hover:bg-danger/10 hover:text-danger sm:opacity-0 sm:group-hover:opacity-100"
                                                     >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </motion.button>
                                                 )}
                                             </div>
                                             {item.notes && (
-                                                <p className="text-xs text-muted line-through">{item.notes}</p>
+                                                <p className="mt-0.5 text-xs text-muted line-through opacity-60">{item.notes}</p>
                                             )}
-                                            <div className="flex flex-col gap-1 text-xs text-muted">
-                                                <div className="flex items-center gap-2">
+                                            <div className="mt-2 flex flex-col gap-1 text-xs text-muted">
+                                                <div className="flex items-center gap-1.5">
                                                     <Avatar
                                                         src={userAvatars[item.createdBy]}
                                                         fallback={userNames[item.createdBy]?.[0] || "?"}
                                                         size="sm"
                                                     />
-                                                    <span>
-                                                        {t("lists.addedBy", { defaultValue: "Adicionado por" })}{" "}
-                                                        <span className="font-medium">{userNames[item.createdBy] || "..."}</span>
-                                                    </span>
+                                                    <span className="truncate">{userNames[item.createdBy] || "..."}</span>
                                                 </div>
                                                 {item.checkedBy && item.checkedAt && (
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1.5">
                                                         <Avatar
                                                             src={userAvatars[item.checkedBy]}
                                                             fallback={userNames[item.checkedBy]?.[0] || "?"}
                                                             size="sm"
                                                         />
-                                                        <span>
-                                                            {list.type === "shopping"
+                                                        <span className="truncate">
+                                                            {isShopping
                                                                 ? t("lists.purchasedBy", { defaultValue: "Comprado por" })
                                                                 : t("lists.completedBy", { defaultValue: "Concluído por" })
                                                             }{" "}
@@ -713,10 +857,11 @@ export function ListDetailPage() {
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 ))}
+                                </AnimatePresence>
                             </div>
-                        </Card>
+                        </div>
                     )}
                 </div>
             )}

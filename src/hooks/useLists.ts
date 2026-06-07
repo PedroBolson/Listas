@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { subscribeToFamilyLists, subscribeToListItems, subscribeToList } from "../services/listService";
+import { subscribeToAccessibleFamilyLists, subscribeToListItems, subscribeToList } from "../services/listService";
 import { type ListRecord, type ListItemRecord } from "../domain/models";
 import { useAuth } from "../features/auth/useAuth";
 import { useFamily } from "./useFamily";
@@ -9,28 +9,37 @@ export function useFamilyLists(familyId: string | null) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
     const { domainUser } = useAuth();
-    const { family } = useFamily(familyId);
+    const { family, loading: familyLoading } = useFamily(familyId);
 
     useEffect(() => {
-        if (!familyId) {
+        if (!familyId || !domainUser) {
+            setLists([]);
+            setLoading(!domainUser);
+            return;
+        }
+
+        if (familyLoading) {
+            setLoading(true);
+            return;
+        }
+
+        if (!domainUser.isMaster && !family) {
             setLists([]);
             setLoading(false);
             return;
         }
 
         setLoading(true);
-        const unsubscribe = subscribeToFamilyLists(
+        setError(null);
+
+        const canReadAll = domainUser.isMaster || family?.ownerId === domainUser.id;
+
+        const unsubscribe = subscribeToAccessibleFamilyLists(
             familyId,
+            domainUser.id,
+            canReadAll,
             (data) => {
-                let filteredLists = data;
-
-                if (domainUser?.isFamilyMemberOnly && family) {
-                    const memberProfile = family.members[domainUser.id];
-                    const allowedLists = memberProfile?.allowedLists || [];
-                    filteredLists = data.filter(list => allowedLists.includes(list.id));
-                }
-
-                setLists(filteredLists);
+                setLists(data);
                 setLoading(false);
             },
             (err) => {
@@ -40,7 +49,7 @@ export function useFamilyLists(familyId: string | null) {
         );
 
         return () => unsubscribe();
-    }, [familyId, domainUser, family]);
+    }, [familyId, domainUser, family, familyLoading]);
 
     return { lists, loading, error };
 }

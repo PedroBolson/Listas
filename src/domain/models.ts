@@ -1,5 +1,7 @@
 export type Locale = "pt" | "en";
 
+export const SELECTED_FAMILY_STORAGE_KEY = "listshub.selectedFamilyId";
+
 export const USER_ROLE = {
   MASTER: "master",
   TITULAR: "titular",
@@ -135,7 +137,7 @@ export class SubscriptionPlan {
   }
 }
 
-export type ListVisibility = "private" | "shared" | "public";
+export type ListVisibility = "private" | "family" | "public" | "shared";
 export type ListType = "shopping" | "tasks";
 
 export interface ListItemRecord {
@@ -192,6 +194,10 @@ export interface FamilyMemberProfile {
   joinedAt: string;
   removedAt?: string;
   allowedLists?: string[]; // IDs das listas que o Member pode visualizar (owner vê todas)
+  name?: string;
+  displayName?: string;
+  email?: string;
+  photoURL?: string | null;
 }
 
 export interface DomainUserProps {
@@ -293,6 +299,15 @@ export class DomainUser {
   }
 
   get managedFamilyId() {
+    const activeFamilyIds = new Set(this.activeFamilies.map((family) => family.familyId));
+
+    if (typeof window !== "undefined") {
+      const selectedFamilyId = window.localStorage.getItem(SELECTED_FAMILY_STORAGE_KEY);
+      if (selectedFamilyId && activeFamilyIds.has(selectedFamilyId)) {
+        return selectedFamilyId;
+      }
+    }
+
     // Master também pode ter uma família ativa para trabalhar
     if (this.props.primaryFamilyId) return this.props.primaryFamilyId;
 

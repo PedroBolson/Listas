@@ -8,8 +8,8 @@ import { Avatar } from "../ui/Avatar";
 import { useFamily } from "../../hooks/useFamily";
 import { updateListPermissions } from "../../services/listService";
 import type { ListRecord, PermissionRule, FamilyMemberProfile } from "../../domain/models";
-import { getUserById } from "../../services/userService";
 import type { DomainUserProps } from "../../domain/models";
+import { memberProfileToDomainUser } from "../../utils/memberProfile";
 
 interface ManageListMembersModalProps {
     list: ListRecord;
@@ -43,47 +43,19 @@ export function ManageListMembersModal({ list, isOpen, onClose, onSuccess }: Man
         setLocalPermissions(permMap);
     }, [list.permissions, isOpen]);
 
-    // Buscar detalhes dos membros da família
+    // Usar dados cacheados em families.members. users/{uid} não é mais legível por outros usuários.
     useEffect(() => {
         if (!family || !isOpen) return;
 
-        const fetchDetails = async () => {
-            const details = new Map<string, DomainUserProps>();
+        const details = new Map<string, DomainUserProps>();
 
-            for (const [userId, member] of Object.entries(family.members)) {
-                if (member.status === "active" && userId !== list.ownerId) {
-                    try {
-                        // Sempre buscar dados completos do usuário para ter photoURL
-                        const userData = await getUserById(userId);
-                        if (userData) {
-                            details.set(userId, userData);
-                        }
-                    } catch (error) {
-                        console.error(`Erro ao buscar usuário ${userId}:`, error);
-                        // Fallback para dados da família se falhar
-                        if ((member as any).displayName) {
-                            const minimal: DomainUserProps = {
-                                id: userId,
-                                email: (member as any).email || "",
-                                displayName: (member as any).displayName || "",
-                                photoURL: null,
-                                locale: "pt",
-                                role: "member",
-                                status: "active",
-                                families: [],
-                                createdAt: new Date().toISOString(),
-                                updatedAt: new Date().toISOString(),
-                            };
-                            details.set(userId, minimal);
-                        }
-                    }
-                }
+        for (const [userId, member] of Object.entries(family.members)) {
+            if (member.status === "active" && userId !== list.ownerId) {
+                details.set(userId, memberProfileToDomainUser(userId, member));
             }
+        }
 
-            setMemberDetails(details);
-        };
-
-        fetchDetails();
+        setMemberDetails(details);
     }, [family, list.ownerId, isOpen]);
 
     // Lista de membros disponíveis (exceto owner)

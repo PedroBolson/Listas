@@ -1,206 +1,354 @@
-import { Crown, LogOut, ChevronDown, User } from "lucide-react";
+import {
+  LogOut,
+  ChevronDown,
+  User,
+  ListChecks,
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  ShieldCheck,
+  Crown,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../../features/auth/useAuth";
 import { ThemeToggle } from "./ThemeToggle";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FamilySelector } from "./FamilySelector";
 import { Avatar } from "../ui/Avatar";
-import { Button } from "../ui/Button";
+import { BottomSheet } from "../ui/BottomSheet";
 import { UserProfileModal } from "../profile/UserProfileModal";
 import { USER_ROLE } from "../../domain/models";
+
+// ─── Role badge ───────────────────────────────────────────────────────────────
+
+interface RoleBadgeProps {
+  role: string;
+}
+
+function RoleBadge({ role }: RoleBadgeProps) {
+  const { t } = useTranslation();
+
+  const config: Record<string, { label: string; className: string }> = {
+    master: {
+      label: t("roles.master", { defaultValue: "Master" }),
+      className: "bg-amber-400/15 text-amber-600 dark:text-amber-400",
+    },
+    titular: {
+      label: t("roles.titular", { defaultValue: "Titular" }),
+      className: "bg-brand-soft text-brand",
+    },
+    owner: {
+      label: t("roles.titular", { defaultValue: "Titular" }),
+      className: "bg-brand-soft text-brand",
+    },
+    member: {
+      label: t("roles.member", { defaultValue: "Membro" }),
+      className: "bg-surface-alt text-secondary",
+    },
+    collaborator: {
+      label: t("roles.collaborator", { defaultValue: "Colaborador" }),
+      className: "bg-surface-alt text-secondary",
+    },
+    viewer: {
+      label: t("roles.viewer", { defaultValue: "Visualizador" }),
+      className: "bg-surface-alt text-secondary",
+    },
+  };
+
+  const { label, className } = config[role] ?? config.member;
+
+  return (
+    <span
+      className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+// ─── Master crown badge on avatar ─────────────────────────────────────────────
+
+function MasterBadge() {
+  return (
+    <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 shadow-sm">
+      <Crown className="h-2.5 w-2.5 text-white" />
+    </span>
+  );
+}
+
+// ─── TopBar ───────────────────────────────────────────────────────────────────
 
 export function TopBar() {
   const { domainUser, signOut } = useAuth();
   const { t } = useTranslation();
+  const location = useLocation();
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [currentFamilyRole, setCurrentFamilyRole] = useState<string | null>(null);
   const [avatarKey, setAvatarKey] = useState(Date.now());
 
-  // Detectar role na família atual
+  // Fetch role in current family
   useEffect(() => {
-    const fetchCurrentFamilyRole = async () => {
+    const fetchRole = async () => {
       if (!domainUser?.managedFamilyId) {
         setCurrentFamilyRole(null);
         return;
       }
-
       try {
         const { getFamilyById } = await import("../../services/familyService");
         const family = await getFamilyById(domainUser.managedFamilyId);
-
-        if (!family) {
-          setCurrentFamilyRole(null);
-          return;
-        }
-
-        // Se é dono da família
-        if (family.ownerId === domainUser.id) {
-          setCurrentFamilyRole("titular");
-        } else {
-          // Se é membro, pegar o role do members
-          const memberData = family.members?.[domainUser.id];
-          setCurrentFamilyRole(memberData?.role || "viewer");
-        }
-      } catch (error) {
-        console.error("Erro ao buscar role da família:", error);
+        if (!family) return setCurrentFamilyRole(null);
+        if (family.ownerId === domainUser.id) return setCurrentFamilyRole("owner");
+        const memberData = family.members?.[domainUser.id];
+        setCurrentFamilyRole(memberData?.role ?? "viewer");
+      } catch {
         setCurrentFamilyRole(null);
       }
     };
-
-    fetchCurrentFamilyRole();
+    fetchRole();
   }, [domainUser?.managedFamilyId, domainUser?.id]);
+
+  // Breadcrumb: page icon + label based on current route
+  const pageInfo = useMemo(() => {
+    const path = location.pathname;
+    if (path === "/" || path.startsWith("/lists"))
+      return { icon: <ListChecks className="h-4 w-4" />, label: t("navigation.lists") };
+    if (path === "/dashboard")
+      return { icon: <LayoutDashboard className="h-4 w-4" />, label: t("navigation.dashboard") };
+    if (path.startsWith("/family"))
+      return { icon: <Users className="h-4 w-4" />, label: t("navigation.family") };
+    if (path.startsWith("/billing"))
+      return { icon: <CreditCard className="h-4 w-4" />, label: t("navigation.billing") };
+    if (path.startsWith("/master"))
+      return { icon: <ShieldCheck className="h-4 w-4" />, label: t("navigation.masterConsole") };
+    return { icon: null, label: "ListsHub" };
+  }, [location.pathname, t]);
+
+  const displayRole = domainUser?.isMaster
+    ? USER_ROLE.MASTER
+    : (currentFamilyRole ?? domainUser?.role ?? "member");
+
+  const firstName = domainUser?.displayName?.split(" ")[0]
+    || domainUser?.email?.split("@")[0]
+    || "—";
+
+  const avatarSrc = domainUser?.photoURL ? `${domainUser.photoURL}?t=${avatarKey}` : null;
+  const avatarFallback = domainUser?.displayName?.[0] || "U";
+
+  // Shared user card JSX for dropdown + bottom sheet
+  const userCard = (onPress: () => void) => (
+    <button
+      onClick={onPress}
+      className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-surface-alt"
+    >
+      <div className="relative shrink-0">
+        <Avatar key={avatarKey} src={avatarSrc} fallback={avatarFallback} size="md" />
+        {domainUser?.isMaster && <MasterBadge />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-primary">
+          {domainUser?.displayName || "—"}
+        </p>
+        <p className="truncate text-xs text-muted">{domainUser?.email}</p>
+      </div>
+      <User className="h-4 w-4 shrink-0 text-muted" />
+    </button>
+  );
 
   return (
     <>
-      <header className="relative z-50 flex items-center justify-between gap-2 rounded-4xl border border-soft bg-surface px-4 py-3 shadow-soft/40 backdrop-blur lg:gap-3 lg:px-8 lg:py-4">
-        {/* Left side - Master crown only */}
-        <div className="flex items-center gap-2">
-          {domainUser?.isMaster && (
-            <Crown className="h-4 w-4 shrink-0 text-amber-400 lg:h-5 lg:w-5" />
-          )}
-        </div>
+      <header className="relative z-50 flex items-center gap-3 rounded-4xl border border-soft bg-surface px-5 py-3 shadow-soft/20 lg:px-6">
 
-        {/* Center - Mobile: Clickable dropdown trigger - até 1280px */}
-        <button
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="group relative flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 xl:hidden"
-        >
-          <div className="relative flex min-w-0 flex-col items-center">
-            {!isDropdownOpen && (
-              <span className="absolute -left-3 top-0 flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-brand"></span>
-              </span>
-            )}
-            <span className="truncate text-xs font-semibold text-primary">
-              {domainUser?.displayName ?? "—"}
-            </span>
-            <span className="truncate text-xs text-muted capitalize">
-              {domainUser?.role === USER_ROLE.MASTER
-                ? t("roles.master")
-                : currentFamilyRole
-                  ? t(`roles.${currentFamilyRole}`)
-                  : t("roles.guest")}
-            </span>
-          </div>
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 text-muted transition-all duration-300 group-hover:text-brand ${isDropdownOpen ? "rotate-180" : "animate-bounce"
-              }`}
-          />
-        </button>
-
-        {/* Spacer for desktop */}
-        <div className="hidden flex-1 xl:block" />
-
-        {/* Right side - Actions */}
-        <div className="flex shrink-0 items-center gap-1 lg:gap-2">
-          <div className="hidden items-center gap-1 xl:flex lg:gap-2">
-            <FamilySelector />
-            <ThemeToggle />
-            <LanguageSwitcher />
-          </div>
-          {/* Clickable user card with avatar and role - Desktop */}
-          <button
-            onClick={() => setIsProfileModalOpen(true)}
-            className="hidden items-center gap-2 rounded-full border border-soft bg-surface-alt px-3 py-2 transition-all hover:border-brand/40 hover:bg-surface xl:flex"
+        {/* ── Desktop Left: animated breadcrumb ── */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname.split("/")[1] || "root"}
+            className="hidden items-center gap-2 text-sm font-semibold text-secondary xl:flex"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
           >
-            <Avatar
-              key={avatarKey}
-              src={domainUser?.photoURL ? `${domainUser.photoURL}?t=${avatarKey}` : null}
-              fallback={domainUser?.displayName?.[0] || "U"}
-              size="sm"
-            />
-            <div className="flex flex-col items-start">
-              <span className="text-xs font-semibold">{domainUser?.email}</span>
-              <span className="text-[10px] uppercase text-muted">
-                {domainUser?.role === USER_ROLE.MASTER
-                  ? t("roles.master")
-                  : currentFamilyRole
-                    ? t(`roles.${currentFamilyRole}`)
-                    : ""}
-              </span>
-            </div>
-          </button>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<LogOut className="h-4 w-4" />}
-            onClick={() => signOut()}
-            className="hidden xl:inline-flex"
-          >
-            {t("actions.signOut")}
-          </Button>
-        </div>
-
-        {/* Mobile Dropdown Menu */}
-        <AnimatePresence>
-          {isDropdownOpen && (
-            <>
-              {/* Invisible backdrop for closing */}
-              <div
-                onClick={() => setIsDropdownOpen(false)}
-                className="fixed inset-0 z-50 xl:hidden"
-              />
-
-              {/* Dropdown */}
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="fixed left-4 right-4 top-20 z-50 flex flex-col gap-2 rounded-2xl border border-soft bg-surface p-3 shadow-lg xl:hidden"
-              >
-                {/* User Info - Clicável para abrir modal de perfil */}
-                <button
-                  onClick={() => {
-                    setIsDropdownOpen(false);
-                    setIsProfileModalOpen(true);
-                  }}
-                  className="flex items-center gap-3 border-b border-soft pb-3 transition-colors hover:bg-surface-alt rounded-lg p-2 -m-2"
-                >
-                  <Avatar
-                    key={avatarKey}
-                    src={domainUser?.photoURL ? `${domainUser.photoURL}?t=${avatarKey}` : null}
-                    fallback={domainUser?.displayName?.[0] || "U"}
-                    size="md"
-                  />
-                  <div className="flex flex-1 flex-col items-start">
-                    <span className="text-sm font-semibold text-primary">{domainUser?.displayName}</span>
-                    <span className="text-xs text-muted">{domainUser?.email}</span>
-                  </div>
-                  <User className="h-4 w-4 text-muted" />
-                </button>
-
-                <div className="flex flex-col gap-2">
-                  <div className="px-2 py-1">
-                    <FamilySelector />
-                  </div>
-
-                  <div className="flex items-center justify-between px-2 py-1">
-                    <span className="text-sm text-secondary">{t("settings.theme", { defaultValue: "Tema" })}</span>
-                    <ThemeToggle />
-                  </div>
-
-                  <div className="flex items-center justify-between px-2 py-1">
-                    <span className="text-sm text-secondary">{t("settings.language", { defaultValue: "Idioma" })}</span>
-                    <LanguageSwitcher />
-                  </div>
-                </div>
-              </motion.div>
-            </>
-          )}
+            {pageInfo.icon && <span className="text-brand">{pageInfo.icon}</span>}
+            <span>{pageInfo.label}</span>
+          </motion.div>
         </AnimatePresence>
+
+        {/* ── Mobile Left: brand mark ── */}
+        <div className="flex items-center gap-2 xl:hidden">
+          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-brand/10">
+            <ListChecks className="h-3.5 w-3.5 text-brand" />
+          </div>
+          <span className="text-sm font-bold text-brand">ListsHub</span>
+        </div>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* ── Desktop Right: controls ── */}
+        <div className="hidden items-center gap-2 xl:flex">
+          <FamilySelector />
+          <ThemeToggle />
+          <LanguageSwitcher />
+
+          {/* User pill with dropdown */}
+          <div className="relative">
+            <motion.button
+              onClick={() => setIsDropdownOpen((v) => !v)}
+              className="flex items-center gap-2 rounded-full border border-soft bg-surface-alt py-1 pl-1.5 pr-3 transition-colors hover:border-brand/40 hover:bg-surface"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            >
+              <div className="relative">
+                <Avatar key={avatarKey} src={avatarSrc} fallback={avatarFallback} size="sm" />
+                {domainUser?.isMaster && <MasterBadge />}
+              </div>
+              <span className="max-w-[90px] truncate text-sm font-medium text-primary">
+                {firstName}
+              </span>
+              <motion.span
+                animate={{ rotate: isDropdownOpen ? 180 : 0 }}
+                transition={{ duration: 0.22 }}
+              >
+                <ChevronDown className="h-3.5 w-3.5 text-muted" />
+              </motion.span>
+            </motion.button>
+
+            {/* Desktop dropdown */}
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsDropdownOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                    className="absolute right-0 top-full z-50 mt-2 min-w-[230px] origin-top-right overflow-hidden rounded-2xl border border-soft bg-surface shadow-soft"
+                  >
+                    {/* User info */}
+                    <div className="p-4 pb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
+                          <Avatar key={avatarKey} src={avatarSrc} fallback={avatarFallback} size="md" />
+                          {domainUser?.isMaster && <MasterBadge />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-primary">
+                            {domainUser?.displayName || "—"}
+                          </p>
+                          <p className="truncate text-xs text-muted">{domainUser?.email}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <RoleBadge role={displayRole} />
+                      </div>
+                    </div>
+
+                    <div className="mx-3 h-px bg-surface-alt" />
+
+                    <div className="p-2">
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          setIsProfileModalOpen(true);
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-secondary transition hover:bg-surface-alt hover:text-primary"
+                      >
+                        <User className="h-4 w-4" />
+                        {t("navigation.profile", { defaultValue: "Ver perfil" })}
+                      </button>
+                      <button
+                        onClick={() => void signOut()}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-secondary transition hover:bg-danger/10 hover:text-danger"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        {t("actions.signOut")}
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* ── Mobile Right: avatar button → opens bottom sheet ── */}
+        <motion.button
+          className="relative xl:hidden"
+          onClick={() => setIsBottomSheetOpen(true)}
+          whileTap={{ scale: 0.88 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          aria-label="Abrir menu"
+        >
+          <Avatar key={avatarKey} src={avatarSrc} fallback={avatarFallback} size="sm" />
+          {domainUser?.isMaster && <MasterBadge />}
+        </motion.button>
       </header>
 
-      {/* User Profile Modal */}
+      {/* ── Mobile Bottom Sheet ── */}
+      <BottomSheet isOpen={isBottomSheetOpen} onClose={() => setIsBottomSheetOpen(false)}>
+        {/* User card */}
+        {userCard(() => {
+          setIsBottomSheetOpen(false);
+          setIsProfileModalOpen(true);
+        })}
+
+        <div className="mt-2 flex items-center justify-between px-3">
+          <RoleBadge role={displayRole} />
+        </div>
+
+        <div className="my-4 h-px bg-surface-alt" />
+
+        {/* Family selector — inline so it expands in-place within the sheet */}
+        <FamilySelector variant="inline" />
+
+        {/* Settings rows */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between rounded-xl px-2 py-3">
+            <span className="text-sm text-secondary">
+              {t("settings.theme", { defaultValue: "Tema" })}
+            </span>
+            <ThemeToggle />
+          </div>
+          <div className="flex items-center justify-between rounded-xl px-2 py-3">
+            <span className="text-sm text-secondary">
+              {t("settings.language", { defaultValue: "Idioma" })}
+            </span>
+            <LanguageSwitcher />
+          </div>
+        </div>
+
+        <div className="my-4 h-px bg-surface-alt" />
+
+        {/* Logout */}
+        <button
+          onClick={() => {
+            setIsBottomSheetOpen(false);
+            void signOut();
+          }}
+          className="flex w-full items-center gap-3 rounded-xl px-2 py-3 text-sm text-danger transition hover:bg-danger/10"
+        >
+          <LogOut className="h-4 w-4" />
+          {t("actions.signOut")}
+        </button>
+      </BottomSheet>
+
+      {/* Profile Modal */}
       <UserProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => {
           setIsProfileModalOpen(false);
-          setAvatarKey(Date.now()); // Força atualização do avatar
+          setAvatarKey(Date.now());
         }}
       />
     </>

@@ -32,7 +32,7 @@ export async function createList(
 
     // Remover campos undefined antes de salvar no Firestore
     const cleanData = Object.fromEntries(
-        Object.entries(list).filter(([_, value]) => value !== undefined)
+        Object.entries(list).filter(([, value]) => value !== undefined)
     ) as ListRecord;
 
     await setDoc(listRef, cleanData);
@@ -121,41 +121,10 @@ export async function updateListPermissions(
     collaborators: string[]
 ): Promise<void> {
     const listRef = doc(db, COLLECTIONS.FAMILIES, familyId, "lists", listId);
-    const familyRef = doc(db, COLLECTIONS.FAMILIES, familyId);
 
     await updateDoc(listRef, {
         permissions,
         collaborators,
-        updatedAt: new Date().toISOString(),
-    });
-
-    const familySnap = await getDoc(familyRef);
-    if (!familySnap.exists()) return;
-
-    const familyData = familySnap.data();
-    const members = familyData.members || {};
-    const updatedMembers = { ...members };
-
-    for (const [userId, memberProfile] of Object.entries(members)) {
-        const currentAllowedLists = (memberProfile as any).allowedLists || [];
-        const isCollaborator = collaborators.includes(userId);
-        const hasListAccess = currentAllowedLists.includes(listId);
-
-        if (isCollaborator && !hasListAccess) {
-            updatedMembers[userId] = {
-                ...(memberProfile as any),
-                allowedLists: [...currentAllowedLists, listId],
-            };
-        } else if (!isCollaborator && hasListAccess) {
-            updatedMembers[userId] = {
-                ...(memberProfile as any),
-                allowedLists: currentAllowedLists.filter((id: string) => id !== listId),
-            };
-        }
-    }
-
-    await updateDoc(familyRef, {
-        members: updatedMembers,
         updatedAt: new Date().toISOString(),
     });
 }
@@ -180,6 +149,69 @@ export function subscribeToFamilyLists(
             }
         }
     );
+}
+
+export function subscribeToAccessibleFamilyLists(
+    familyId: string,
+    userId: string,
+    canReadAll: boolean,
+    onUpdate: (lists: ListRecord[]) => void,
+    onError?: (error: Error) => void
+): Unsubscribe {
+    const listsRef = collection(db, COLLECTIONS.FAMILIES, familyId, "lists");
+
+    if (canReadAll) {
+        return subscribeToFamilyLists(familyId, onUpdate, onError);
+    }
+
+    const sourceMaps: Array<Map<string, ListRecord>> = [
+        new Map(),
+        new Map(),
+        new Map(),
+        new Map(),
+    ];
+
+    const publish = () => {
+        const combined = new Map<string, ListRecord>();
+        sourceMaps.forEach((source) => {
+            source.forEach((list, id) => combined.set(id, list));
+        });
+
+        const lists = Array.from(combined.values()).sort((a, b) =>
+            b.createdAt.localeCompare(a.createdAt)
+        );
+        onUpdate(lists);
+    };
+
+    const queries = [
+        query(listsRef, where("ownerId", "==", userId)),
+        query(listsRef, where("visibility", "==", "family")),
+        query(listsRef, where("visibility", "==", "public")),
+        query(listsRef, where("collaborators", "array-contains", userId)),
+    ];
+
+    const unsubscribes = queries.map((accessibleQuery, index) =>
+        onSnapshot(
+            accessibleQuery,
+            (snapshot) => {
+                const source = sourceMaps[index];
+                source.clear();
+                snapshot.docs.forEach((snapshotDoc) => {
+                    source.set(snapshotDoc.id, snapshotDoc.data() as ListRecord);
+                });
+                publish();
+            },
+            (error) => {
+                if (onError) {
+                    onError(error);
+                }
+            }
+        )
+    );
+
+    return () => {
+        unsubscribes.forEach((unsubscribe) => unsubscribe());
+    };
 }
 
 export function subscribeToList(

@@ -10,10 +10,10 @@ export function MobileNav() {
   return (
     <nav className="fixed inset-x-4 bottom-4 z-40 flex items-center justify-around gap-2 rounded-3xl border border-soft bg-surface/80 p-2 shadow-soft/40 backdrop-blur xl:hidden">
       {links.map((link) => {
-        // Dashboard deve estar ativo tanto em "/" quanto em "/dashboard"
-        const isDashboardLink = link.to === "/dashboard";
-        const customIsActive = isDashboardLink
-          ? (location.pathname === "/" || location.pathname === "/dashboard")
+        // Lists é a home — ativo em "/" e em qualquer subrota de /lists
+        const isListsLink = link.to === "/lists";
+        const customIsActive = isListsLink
+          ? (location.pathname === "/" || location.pathname.startsWith("/lists"))
           : undefined;
 
         return (

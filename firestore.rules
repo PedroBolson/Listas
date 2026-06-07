@@ -22,10 +22,18 @@ service cloud.firestore {
       return userDocExists() && userDoc().data.role == role;
     }
 
+    function hasLegacyMasterFlag() {
+      return userDocExists()
+        && 'props' in userDoc().data
+        && userDoc().data.props != null
+        && 'isMaster' in userDoc().data.props
+        && userDoc().data.props.isMaster == true;
+    }
+
     function isMaster() {
       return userDocExists() && (
         userDoc().data.role == "master" ||
-        (userDoc().data.props != null && userDoc().data.props.isMaster == true)
+        hasLegacyMasterFlag()
       );
     }
 
@@ -63,48 +71,115 @@ service cloud.firestore {
 
     function listHasCollaborator(listData) {
       return signedIn()
+        && 'collaborators' in listData
         && listData.collaborators != null
         && listData.collaborators.hasAny([currentUid()]);
+    }
+
+    function listHasAllowedMember(listData) {
+      return signedIn()
+        && 'allowedMembers' in listData
+        && listData.allowedMembers != null
+        && listData.allowedMembers.hasAny([currentUid()]);
+    }
+
+    function listHasMemberMapEntry(listData) {
+      return signedIn()
+        && 'listMembers' in listData
+        && listData.listMembers != null
+        && listData.listMembers[currentUid()] != null;
+    }
+
+    function isFamilyVisibleList(listData) {
+      return listData.visibility == "family" || listData.visibility == "public";
     }
 
     function isListOwner(listData) {
       return signedIn() && listData.ownerId == currentUid();
     }
 
-    function userFamilyCount(userData) {
-      return userData.families == null ? 0 : userData.families.size();
+    function canReadList(listData, familyId) {
+      return isMaster()
+        || isFamilyOwner(familyId)
+        || isListOwner(listData)
+        || (
+          isFamilyMember(familyId)
+          && (
+            isFamilyVisibleList(listData)
+            || listHasCollaborator(listData)
+            || listHasAllowedMember(listData)
+            || listHasMemberMapEntry(listData)
+          )
+        );
     }
 
-    function requestFamilyCount() {
-      return request.resource.data.families == null ? 0 : request.resource.data.families.size();
+    function canEditList(listData, familyId) {
+      return isMaster()
+        || isFamilyOwner(familyId)
+        || isListOwner(listData)
+        || (
+          isFamilyMember(familyId)
+          && (
+            listHasCollaborator(listData)
+            || listHasAllowedMember(listData)
+            || listHasMemberMapEntry(listData)
+          )
+        );
     }
 
-    function familyIdAt(userData, index) {
-      return userFamilyCount(userData) > index ? userData.families[index].familyId : null;
+    function parentListData(familyId, listId) {
+      return get(/databases/$(database)/documents/families/$(familyId)/lists/$(listId)).data;
     }
 
-    function ownsFamilyReference(userData, index) {
-      let familyId = familyIdAt(userData, index);
-      return familyId != null && isFamilyOwner(familyId);
+    function isSafeUserCreate(userId) {
+      return signedIn()
+        && isSelf(userId)
+        && request.resource.data.keys().hasOnly([
+          "id",
+          "email",
+          "displayName",
+          "photoURL",
+          "locale",
+          "role",
+          "status",
+          "primaryFamilyId",
+          "families",
+          "billing",
+          "createdAt",
+          "updatedAt",
+          "lastSignInAt"
+        ])
+        && request.resource.data.id == userId
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == "titular"
+        && request.resource.data.status == "active"
+        && request.resource.data.billing.planId == "free"
+        && request.resource.data.billing.status == "active"
+        && request.resource.data.billing.seats.total == 3
+        && request.resource.data.billing.seats.used == 1
+        && request.resource.data.billing.invites.total == 3
+        && request.resource.data.billing.invites.used == 0;
     }
 
-    function requestFamilyIdAt(index) {
-      return requestFamilyCount() > index ? request.resource.data.families[index].familyId : null;
-    }
-
-    function sameFamilyReference(userData, index) {
-      let originalFamilyId = familyIdAt(userData, index);
-      return originalFamilyId == null || requestFamilyIdAt(index) == originalFamilyId;
-    }
-
-    function isInSameFamily(targetUserId) {
-      let currentUserData = get(/databases/$(database)/documents/users/$(currentUid())).data;
-      let currentUserFamilyId = currentUserData.primaryFamilyId;
-      
-      return currentUserFamilyId != null
-        && exists(/databases/$(database)/documents/families/$(currentUserFamilyId))
-        && get(/databases/$(database)/documents/families/$(currentUserFamilyId)).data.members[targetUserId] != null
-        && get(/databases/$(database)/documents/families/$(currentUserFamilyId)).data.members[targetUserId].status == "active";
+    function isSafeUserSelfUpdate(userId) {
+      return signedIn()
+        && isSelf(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "displayName",
+          "photoURL",
+          "locale",
+          "preferences",
+          "updatedAt",
+          "lastSignInAt"
+        ])
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.status == resource.data.status
+        && request.resource.data.billing == resource.data.billing
+        && request.resource.data.families == resource.data.families
+        && request.resource.data.primaryFamilyId == resource.data.primaryFamilyId
+        && request.resource.data.createdAt == resource.data.createdAt;
     }
 
     // Regra global para collectionGroup de invites
@@ -114,12 +189,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow create: if signedIn() && isSelf(userId);
-      allow read: if signedIn() && (isSelf(userId) || isMaster() || isInSameFamily(userId));
-      allow update: if isMaster() 
-        || (signedIn() && isSelf(userId)
-          && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
-          && (!('status' in request.resource.data) || request.resource.data.status == resource.data.status));
+      allow create: if isSafeUserCreate(userId);
+      allow read: if isSelf(userId) || isMaster();
+      allow update: if isMaster() || isSafeUserSelfUpdate(userId);
       allow delete: if false;
     }
 
@@ -144,29 +216,24 @@ service cloud.firestore {
             isTitular()
             && request.resource.data.ownerId == currentUid()
             && isFamilyOwner(familyId)
+            && request.resource.data.familyId == familyId
           );
-        allow read: if isMaster() || isFamilyMember(familyId);
+        allow read: if canReadList(resource.data, familyId);
         allow update: if isMaster()
           || (
-            isFamilyMember(familyId)
-            && isListOwner(resource.data)
+            canEditList(resource.data, familyId)
             && request.resource.data.ownerId == resource.data.ownerId
             && request.resource.data.familyId == resource.data.familyId
           );
-        allow delete: if isMaster()
-          || (
-            isFamilyMember(familyId)
-            && isListOwner(resource.data)
-          );
+        allow delete: if canEditList(resource.data, familyId);
 
         match /items/{itemId} {
-          allow read: if isMaster()
-            || isFamilyOwner(familyId)
-            || isFamilyMember(familyId)
-            || listHasCollaborator(get(/databases/$(database)/documents/families/$(familyId)/lists/$(listId)).data);
-          allow create, update, delete: if isMaster() 
-            || isFamilyOwner(familyId)
-            || isFamilyMember(familyId);
+          allow read: if canReadList(parentListData(familyId, listId), familyId);
+          allow create: if canEditList(parentListData(familyId, listId), familyId)
+            && request.resource.data.createdBy == currentUid();
+          allow update: if canEditList(parentListData(familyId, listId), familyId)
+            && request.resource.data.createdBy == resource.data.createdBy;
+          allow delete: if canEditList(parentListData(familyId, listId), familyId);
         }
       }
 
